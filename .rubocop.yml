@@ -1,0 +1,34 @@
+plugins:
+  - rubocop-performance
+  - rubocop-rails
+  - rubocop-rake
+  - rubocop-rspec
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.3
+
+Metrics/ClassLength:
+  Max: 200 # Recurrence class is intentionally large with nested constant modules
+
+Style/Documentation:
+  Enabled: false
+
+# This gem has no Rails environment task
+Rails/RakeEnvironment:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Max: 5
+
+RSpec/MultipleMemoizedHelpers:
+  Max: 8
+
+RSpec/NestedGroups:
+  Max: 4
+
+RSpec/ExampleLength:
+  Max: 10
+
+RSpec/NamedSubject:
+  Enabled: false
