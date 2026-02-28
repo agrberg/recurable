@@ -1,0 +1,10 @@
+en:
+  recurrence_form:
+    frequency_nouns:
+      DAILY: "day"
+      HOURLY: "hour"
+      MINUTELY: "minute"
+      MONTHLY: "month"
+      WEEKLY: "week"
+      YEARLY: "year"
+    recurrence_statement: "Repeats every %{interval} %{frequency_noun}."
