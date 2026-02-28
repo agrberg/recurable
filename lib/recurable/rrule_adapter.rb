@@ -81,5 +81,5 @@ class RruleAdapter
   # so times need their hour set back 1.
   def dst_adjustment(datetime) = @dt_start_at.utc_offset - datetime.utc_offset
 
-  def dst_no_effect? = @recurrence <= Recurrence.new(frequency: Recurrence::Frequencies::DAILY)
+  def dst_no_effect? = @recurrence <= Recurrence::DST_THRESHOLD
 end

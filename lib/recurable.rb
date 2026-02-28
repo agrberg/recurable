@@ -18,15 +18,8 @@ module Recurable
     # This concern should only be used with a model that has an `rrule` string column.
     serialize :rrule, RecurrenceSerializer, default: Recurrence.with_defaults
 
-    delegate :date_of_month, :date_of_month=,
-             :day_of_week, :day_of_week=,
-             :day_of_month, :day_of_month=,
-             :frequency, :frequency=,
-             :interval, :interval=,
-             :minute_of_hour, :minute_of_hour=,
-             :monthly_option, :monthly_option=,
-             :nth_day_of_month, :nth_day_of_month=,
-             :recurrence_statement, to: :rrule
+    delegate(*Recurrence::DELEGATED_ATTRIBUTES.flat_map { |attr| [attr, :"#{attr}="] },
+             :recurrence_statement, to: :rrule)
 
     # This overrides the prepending model's `valid?` method to also apply the recurrence object's interval validation
     # and merge any errors into the including model's errors.

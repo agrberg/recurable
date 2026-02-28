@@ -26,17 +26,6 @@ class Recurrence
   # Provides `<`, `<=`, `>`, `>=`, `==`, `between?`, and `clamp` by defining `<=>`.
   include Comparable
 
-  ALLOWED_PARAMS = %i[
-    day_of_month
-    date_of_month
-    day_of_week
-    frequency
-    interval
-    minute_of_hour
-    monthly_option
-    nth_day_of_month
-  ].freeze
-
   module ByDayValues
     SUNDAY = 'SU'
     MONDAY = 'MO'
@@ -104,15 +93,6 @@ class Recurrence
     second_to_last: -2
   }.freeze
 
-  module RRuleComponents
-    BYDAY = 'BYDAY'
-    BYMINUTE = 'BYMINUTE'
-    BYMONTHDAY = 'BYMONTHDAY'
-    FREQ = 'FREQ'
-    INTERVAL = 'INTERVAL'
-    BYSETPOS = 'BYSETPOS'
-  end
-
   DATE_OF_MONTH_RANGE = 1..28
   INTERVAL_RANGE = 1..12
   MINUTE_OF_HOUR_RANGE = 0..59
@@ -151,6 +131,15 @@ class Recurrence
 
   attr_reader :nth_day_of_month # Setter is defined explicitly below
 
+  DELEGATED_ATTRIBUTES = %i[
+    date_of_month day_of_month day_of_week frequency
+    interval minute_of_hour monthly_option nth_day_of_month
+  ].freeze
+
+  # Highest frequency where DST transitions don't affect time projection.
+  # Used by RruleAdapter to choose between RRule gem (daily+) and IceCube (hourly-).
+  DST_THRESHOLD = new(frequency: Frequencies::DAILY).freeze
+
   validates :date_of_month, numericality: { in: DATE_OF_MONTH_RANGE }, if: :date_of_month_option?
   validates :day_of_month, inclusion: { in: BY_DAY_VALUES }, if: :nth_day_option?
   validates :day_of_week, inclusion: { in: BY_DAY_VALUES }, allow_blank: true
@@ -165,56 +154,57 @@ class Recurrence
   end
 
   def self.from_rrule(rrule:)
-    new(
-      date_of_month: extract_component_from_rrule(rrule:, component: RRuleComponents::BYMONTHDAY)&.to_i,
-      day_of_month: day_of_month_from_rrule(rrule:),
-      day_of_week: day_of_week_from_rrule(rrule:),
-      frequency: extract_component_from_rrule(rrule:, component: RRuleComponents::FREQ),
-      interval: extract_component_from_rrule(rrule:, component: RRuleComponents::INTERVAL)&.to_i || 1,
-      minute_of_hour: extract_component_from_rrule(rrule:, component: RRuleComponents::BYMINUTE)&.to_i,
-      monthly_option: monthly_option_from_rrule(rrule:),
-      nth_day_of_month: nth_day_of_month_from_rrule(rrule:)
-    )
+    new(**attributes_from(parse_components(rrule)))
   end
 
-  # Private class methods
-  class << self
-    private
+  # Parses "FREQ=DAILY;INTERVAL=1;BYDAY=MO" into {"FREQ"=>"DAILY", ...}
+  private_class_method def self.parse_components(rrule)
+    rrule.split(';').each_with_object({}) do |pair, hash|
+      next if pair.blank?
 
-    def extract_component_from_rrule(rrule:, component:)
-      rrule.split(';').find { _1.include?(component) }&.split('=')&.second
+      key, value = pair.split('=', 2)
+      hash[key] = value
     end
+  end
 
-    def monthly_option_from_rrule(rrule:)
-      return MonthlyOptions::NTH_DAY if nth_day_of_month_from_rrule(rrule:) && day_of_month_from_rrule(rrule:)
+  private_class_method def self.attributes_from(components)
+    freq = components['FREQ']
+    byday = components['BYDAY']
+    bysetpos = components['BYSETPOS']&.to_i
+    bymonthday = components['BYMONTHDAY']&.to_i
 
-      MonthlyOptions::DATE if date_of_month_from_rrule(rrule:)
-    end
+    {
+      date_of_month: bymonthday,
+      day_of_month: (byday if freq == Frequencies::MONTHLY),
+      day_of_week: (byday if freq == Frequencies::WEEKLY),
+      frequency: freq,
+      interval: components['INTERVAL']&.to_i || 1,
+      minute_of_hour: components['BYMINUTE']&.to_i,
+      monthly_option: monthly_option_for(freq, bysetpos, byday, bymonthday),
+      nth_day_of_month: bysetpos
+    }
+  end
 
-    def date_of_month_from_rrule(rrule:)
-      extract_component_from_rrule(rrule:, component: RRuleComponents::BYMONTHDAY)&.to_i
-    end
+  private_class_method def self.monthly_option_for(freq, bysetpos, byday, bymonthday)
+    return unless freq == Frequencies::MONTHLY
+    return MonthlyOptions::NTH_DAY if bysetpos && byday
 
-    def day_of_month_from_rrule(rrule:)
-      return unless extract_component_from_rrule(rrule:, component: RRuleComponents::FREQ) == Frequencies::MONTHLY
-
-      extract_component_from_rrule(rrule:, component: RRuleComponents::BYDAY)
-    end
-
-    def day_of_week_from_rrule(rrule:)
-      return unless extract_component_from_rrule(rrule:, component: RRuleComponents::FREQ) == Frequencies::WEEKLY
-
-      extract_component_from_rrule(rrule:, component: RRuleComponents::BYDAY)
-    end
-
-    def nth_day_of_month_from_rrule(rrule:)
-      extract_component_from_rrule(rrule:, component: RRuleComponents::BYSETPOS)&.to_i
-    end
+    MonthlyOptions::DATE if bymonthday
   end
 
   def rrule
-    [frequency_component, interval_component, by_day_component, by_month_day_component, by_minute_component,
-     set_pos_component].compact_blank.join(';')
+    day = day_of_week.presence || day_of_month.presence
+
+    components = {
+      'FREQ' => frequency,
+      'INTERVAL' => interval,
+      'BYDAY' => day.presence,
+      'BYMONTHDAY' => date_of_month.presence,
+      'BYMINUTE' => minute_of_hour.presence,
+      'BYSETPOS' => nth_day_of_month.presence
+    }
+
+    components.filter_map { |k, v| "#{k}=#{v}" if v.present? }.join(';')
   end
 
   def recurrence_statement
@@ -248,19 +238,4 @@ class Recurrence
   def date_of_month_option? = frequency == Frequencies::MONTHLY && monthly_option == MonthlyOptions::DATE
 
   def nth_day_option? = frequency == Frequencies::MONTHLY && monthly_option == MonthlyOptions::NTH_DAY
-
-  def frequency_component = "#{RRuleComponents::FREQ}=#{frequency}"
-
-  def interval_component = "#{RRuleComponents::INTERVAL}=#{interval}"
-
-  def by_day_component
-    day = day_of_week.presence || day_of_month.presence
-    "#{RRuleComponents::BYDAY}=#{day}" if day.present?
-  end
-
-  def by_minute_component = ("#{RRuleComponents::BYMINUTE}=#{minute_of_hour}" if minute_of_hour.present?)
-
-  def by_month_day_component = ("#{RRuleComponents::BYMONTHDAY}=#{date_of_month}" if date_of_month.present?)
-
-  def set_pos_component = ("#{RRuleComponents::BYSETPOS}=#{nth_day_of_month}" if nth_day_of_month.present?)
 end

@@ -9,7 +9,13 @@ AllCops:
   TargetRubyVersion: 3.3
 
 Metrics/ClassLength:
-  Max: 200 # Recurrence class is intentionally large with nested constant modules
+  Max: 150 # Recurrence class has nested constant modules
+
+Metrics/CyclomaticComplexity:
+  Max: 8
+
+Metrics/MethodLength:
+  CountAsOne: ['array', 'hash']
 
 Style/Documentation:
   Enabled: false
