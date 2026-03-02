@@ -1,10 +1,10 @@
 PATH
   remote: .
   specs:
-    recurable (0.1.0)
-      activemodel (>= 7.1)
-      activesupport (>= 7.1)
-      rrule (>= 0.5)
+    recurable (1.0.0)
+      activemodel (>= 7, < 9)
+      activesupport (>= 7, < 9)
+      rrule (~> 0.5)
 
 GEM
   remote: https://rubygems.org/
@@ -170,7 +170,7 @@ CHECKSUMS
   rack (3.2.5) sha256=4cbd0974c0b79f7a139b4812004a62e4c60b145cba76422e288ee670601ed6d3
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
   rake (13.3.1) sha256=8c9e89d09f66a26a01264e7e3480ec0607f0c497a861ef16063604b1b08eb19c
-  recurable (0.1.0)
+  recurable (1.0.0)
   regexp_parser (2.11.3) sha256=ca13f381a173b7a93450e53459075c9b76a10433caadcb2f1180f2c741fc55a4
   rrule (0.7.0) sha256=816b6ac33c5705addfe25de3c3de05003ae68ae2ca02cf5c0e805ee387851f87
   rspec (3.13.2) sha256=206284a08ad798e61f86d7ca3e376718d52c0bc944626b2349266f239f820587
