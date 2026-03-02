@@ -1,28 +1,24 @@
 # frozen_string_literal: true
 
-require 'active_model'
-require 'active_support/core_ext/object/inclusion'
-
 require 'date'
 require_relative 'version'
 
 # Core model representing an iCal RRULE recurrence pattern.
 #
-# Wraps RRULE string generation/parsing with named attributes, ActiveModel
-# validations, time projection (via RruleAdapter), and human-readable
-# statements (via I18n).
-#
-# Can be used standalone (no Rails required):
+# Pure Ruby data class — no Rails dependencies. Handles RRULE string
+# generation/parsing with named attributes and frequency comparison.
 #
 #   recurrence = Recurrence.new(frequency: 'DAILY', interval: 1)
 #   recurrence.rrule   # => "FREQ=DAILY;INTERVAL=1"
 #   recurrence.daily?  # => true
 #
 class Recurrence
-  include ActiveModel::Model
-
   # Provides `<`, `<=`, `>`, `>=`, `==`, `between?`, and `clamp` by defining `<=>`.
   include Comparable
+
+  def initialize(**attrs)
+    attrs.each { |attr, value| public_send(:"#{attr}=", value) }
+  end
 
   # iCal BYDAY codes derived from Date::DAYNAMES, ordered Sunday–Saturday.
   # Exposes class constants: Recurrence::SUNDAY => 'SU', Recurrence::MONDAY => 'MO', etc.

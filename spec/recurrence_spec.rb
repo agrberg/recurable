@@ -152,10 +152,6 @@ RSpec.describe Recurrence do
       context "when given #{rrule}" do
         let(:rrule) { rrule }
 
-        it 'produces a valid recurrence object' do
-          expect(subject).to be_valid
-        end
-
         recurrence_form_attrs.each do |attr|
           it "initializes the #{attr} attr" do
             expect(subject.send(attr)).to eq expected_values[attr]
