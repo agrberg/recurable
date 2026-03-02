@@ -31,7 +31,7 @@ module Recurable
     validates :day_of_year, array_inclusion: { in: Recurrence::DAY_OF_YEAR_RANGE }, allow_blank: true
     validates :frequency, presence: true, inclusion: { in: Recurrence::FREQUENCIES.keys }
     validates :hour_of_day, array_inclusion: { in: Recurrence::HOUR_OF_DAY_RANGE }, allow_blank: true
-    validates :interval, presence: true, numericality: { in: Recurrence::INTERVAL_RANGE }
+    validates :interval, presence: true, numericality: { only_integer: true, greater_than: 0 }
     validates :minute_of_hour, numericality: { in: Recurrence::MINUTE_OF_HOUR_RANGE }, allow_blank: true
     validates :month_of_year, array_inclusion: { in: Recurrence::MONTH_OF_YEAR_RANGE }, allow_blank: true
     validates :nth_day_of_month, inclusion: { in: Recurrence::NTH_DAY_OF_MONTH.values }, if: :nth_day_option?

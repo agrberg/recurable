@@ -57,10 +57,8 @@ class Recurrence
   # Positive = calendar date (1st–28th), negative = from end (-1 = last day, -2 = second to last).
   # Capped at ±28 because February has 28 days in a common year.
   DATE_OF_MONTH_RANGE = ((-28..-1).to_a + (1..28).to_a).freeze
-  INTERVAL_RANGE = 1..12
-  MINUTE_OF_HOUR_RANGE = 0..59
   HOUR_OF_DAY_RANGE = 0..23
-  SECOND_OF_MINUTE_RANGE = 0..59
+  MINUTE_OF_HOUR_RANGE = SECOND_OF_MINUTE_RANGE = 0..59
   MONTH_OF_YEAR_RANGE = 1..12
   DAY_OF_YEAR_RANGE = ((-366..-1).to_a + (1..366).to_a).freeze
   WEEK_OF_YEAR_RANGE = ((-53..-1).to_a + (1..53).to_a).freeze
