@@ -22,6 +22,14 @@ module Recurable
              *Recurrence::FREQUENCIES.each_key.map { |freq| :"#{freq.downcase}?" },
              :recurrence_statement, to: :rrule)
 
+    def recurrence_times(project_from:, project_to:, dt_start_at: nil)
+      RruleAdapter.times_between(rrule, project_from:, project_to:, dt_start_at:)
+    end
+
+    def last_recurrence_time_before(dt_start_at:, end_at:)
+      RruleAdapter.last_time_before(rrule, dt_start_at:, end_at:)
+    end
+
     # This overrides the prepending model's `valid?` method to also apply the recurrence object's interval validation
     # and merge any errors into the including model's errors.
     #

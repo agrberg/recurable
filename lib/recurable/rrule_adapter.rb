@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'active_support/core_ext/module/delegation'
+require 'active_support/core_ext/numeric/time'
 require 'active_support/core_ext/time/zones'
 require 'ice_cube'
 require 'rrule'
@@ -18,6 +19,19 @@ require 'rrule'
 #   duplicate time and a fall-back overlap would skip one.
 class RruleAdapter
   delegate :rrule, to: :@recurrence
+
+  class << self
+    def times_between(recurrence, project_from:, project_to:, dt_start_at: nil)
+      dt_start_at ||= project_from
+      new(recurrence, dt_start_at:, tzid: Time.zone.tzinfo.identifier)
+        .times_between(project_from:, project_to:)
+    end
+
+    def last_time_before(recurrence, dt_start_at:, end_at:)
+      project_from = (Recurrence::FREQUENCIES[recurrence.frequency] * recurrence.interval).days.ago(end_at)
+      times_between(recurrence, project_from:, project_to: end_at, dt_start_at:).last
+    end
+  end
 
   def initialize(recurrence, dt_start_at:, tzid: nil)
     @recurrence = recurrence

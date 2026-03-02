@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
 require 'active_model'
-require 'active_support/core_ext/numeric/time'
 require 'active_support/core_ext/object/inclusion'
 require 'active_support/core_ext/string/inflections'
 
+require 'date'
 require_relative 'version'
-require_relative 'rrule_adapter'
 
 # Core model representing an iCal RRULE recurrence pattern.
 #
@@ -181,17 +180,6 @@ class Recurrence
     return super unless other.is_a?(self.class)
 
     FREQUENCIES.keys.index(frequency) <=> FREQUENCIES.keys.index(other.frequency)
-  end
-
-  def recurrence_times(project_from:, project_to:, dt_start_at: nil)
-    dt_start_at ||= project_from
-    RruleAdapter.new(self, dt_start_at:, tzid: Time.zone.tzinfo.identifier)
-                .times_between(project_from:, project_to:)
-  end
-
-  def last_recurrence_time_before(dt_start_at:, end_at:)
-    project_from = (FREQUENCIES[frequency] * interval).days.ago(end_at)
-    recurrence_times(project_from:, project_to: end_at, dt_start_at:).last
   end
 
   private
