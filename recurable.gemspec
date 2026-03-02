@@ -24,6 +24,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'activemodel', '>= 7.1'
   spec.add_dependency 'activesupport', '>= 7.1'
-  spec.add_dependency 'ice_cube',     '>= 0.16'
-  spec.add_dependency 'rrule',        '>= 0.5'
+  spec.add_dependency 'rrule', '>= 0.5'
 end
