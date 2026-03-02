@@ -28,7 +28,6 @@ module Recurable
     validates :frequency, presence: true, inclusion: { in: Recurrence::FREQUENCIES.keys }
     validates :interval, presence: true, numericality: { in: Recurrence::INTERVAL_RANGE }
     validates :minute_of_hour, numericality: { in: Recurrence::MINUTE_OF_HOUR_RANGE }, allow_blank: true
-    validates :monthly_option, inclusion: { in: Recurrence::MONTHLY_OPTIONS }, allow_blank: true
     validates :nth_day_of_month, inclusion: { in: Recurrence::NTH_DAY_OF_MONTH.values }, if: :nth_day_option?
 
     def recurrence_statement
@@ -43,10 +42,5 @@ module Recurable
     def last_recurrence_time_before(dt_start_at:, end_at:)
       RruleAdapter.last_time_before(rrule, dt_start_at:, end_at:)
     end
-
-    private
-
-    def date_of_month_option? = frequency == 'MONTHLY' && monthly_option == 'DATE'
-    def nth_day_option? = frequency == 'MONTHLY' && monthly_option == 'NTH_DAY'
   end
 end

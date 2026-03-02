@@ -135,18 +135,16 @@ RSpec.describe Recurrence do
       ['FREQ=MONTHLY;INTERVAL=10',
        { frequency: 'MONTHLY', interval: 10 }],
       ['FREQ=MONTHLY;INTERVAL=10;BYMONTHDAY=10',
-       { frequency: 'MONTHLY', interval: 10, date_of_month: 10, monthly_option: 'DATE' }],
+       { frequency: 'MONTHLY', interval: 10, date_of_month: 10 }],
       ['FREQ=MONTHLY;INTERVAL=10;BYDAY=WE;BYSETPOS=-1',
-       { frequency: 'MONTHLY', interval: 10, day_of_month: 'WE',
-         nth_day_of_month: -1, monthly_option: 'NTH_DAY' }],
+       { frequency: 'MONTHLY', interval: 10, day_of_month: 'WE', nth_day_of_month: -1 }],
       ['FREQ=WEEKLY;INTERVAL=10;',
        { frequency: 'WEEKLY', interval: 10 }],
       ['FREQ=WEEKLY;INTERVAL=10;BYDAY=WE',
        { frequency: 'WEEKLY', interval: 10, day_of_week: 'WE' }]
     ].freeze
 
-    recurrence_form_attrs = %i[date_of_month day_of_month day_of_week frequency interval monthly_option
-                               nth_day_of_month]
+    recurrence_form_attrs = %i[date_of_month day_of_month day_of_week frequency interval nth_day_of_month]
 
     cases.each do |(rrule, expected_values)|
       context "when given #{rrule}" do
@@ -184,6 +182,34 @@ RSpec.describe Recurrence do
       recurrence = described_class.new
       recurrence.nth_day_of_month = ''
       expect(recurrence.nth_day_of_month).to be_nil
+    end
+  end
+
+  describe '#monthly_option' do
+    it 'returns DATE when date_of_month is set' do
+      recurrence = described_class.new(frequency: 'MONTHLY', date_of_month: 15)
+      expect(recurrence.monthly_option).to eq 'DATE'
+      expect(recurrence).to be_date_of_month_option
+      expect(recurrence).not_to be_nth_day_option
+    end
+
+    it 'returns NTH_DAY when nth_day_of_month and day_of_month are set' do
+      recurrence = described_class.new(frequency: 'MONTHLY', day_of_month: 'FR', nth_day_of_month: -1)
+      expect(recurrence.monthly_option).to eq 'NTH_DAY'
+      expect(recurrence).to be_nth_day_option
+      expect(recurrence).not_to be_date_of_month_option
+    end
+
+    it 'returns nil for non-monthly frequencies' do
+      recurrence = described_class.new(frequency: 'DAILY', interval: 1)
+      expect(recurrence.monthly_option).to be_nil
+      expect(recurrence).not_to be_date_of_month_option
+      expect(recurrence).not_to be_nth_day_option
+    end
+
+    it 'returns nil for monthly with no day specifier' do
+      recurrence = described_class.new(frequency: 'MONTHLY', interval: 1)
+      expect(recurrence.monthly_option).to be_nil
     end
   end
 

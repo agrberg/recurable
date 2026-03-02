@@ -78,7 +78,7 @@ class Recurrence
   #                     Also maps to BYDAY but in the weekly context (no BYSETPOS).
   ATTRIBUTES = %i[
     date_of_month day_of_month day_of_week frequency
-    interval minute_of_hour monthly_option nth_day_of_month
+    interval minute_of_hour nth_day_of_month
   ].freeze
 
   attr_accessor(*(ATTRIBUTES - [:nth_day_of_month]))
@@ -114,16 +114,8 @@ class Recurrence
         frequency: freq,
         interval: components['INTERVAL']&.to_i || 1,
         minute_of_hour: components['BYMINUTE']&.to_i,
-        monthly_option: monthly_option_for(freq, bysetpos, byday, bymonthday),
         nth_day_of_month: bysetpos
       }
-    end
-
-    def monthly_option_for(freq, bysetpos, byday, bymonthday)
-      return unless freq == 'MONTHLY'
-      return 'NTH_DAY' if bysetpos && byday
-
-      'DATE' if bymonthday
     end
   end
 
@@ -143,6 +135,16 @@ class Recurrence
   def nth_day_of_month=(value)
     @nth_day_of_month = non_blank(value)&.to_i
   end
+
+  def monthly_option
+    return unless frequency == 'MONTHLY'
+    return 'NTH_DAY' if nth_day_of_month && day_of_month
+
+    'DATE' if date_of_month
+  end
+
+  def date_of_month_option? = monthly_option == 'DATE'
+  def nth_day_option? = monthly_option == 'NTH_DAY'
 
   def <=>(other)
     return super unless other.is_a?(self.class)
