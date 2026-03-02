@@ -84,10 +84,6 @@ class Recurrence
   attr_accessor(*(ATTRIBUTES - [:nth_day_of_month]))
   attr_reader :nth_day_of_month # Setter is overridden below to coerce strings to integers
 
-  # Highest frequency where DST transitions don't affect time projection.
-  # Used by RruleAdapter to choose between RRule gem (daily+) and IceCube (hourly-).
-  DST_THRESHOLD = new(frequency: 'DAILY').freeze
-
   class << self
     def from_rrule(rrule:)
       new(**attributes_from(parse_components(rrule)))

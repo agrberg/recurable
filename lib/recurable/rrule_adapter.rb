@@ -20,6 +20,10 @@ require 'rrule'
 class RruleAdapter
   delegate :rrule, to: :@recurrence
 
+  # Highest frequency where DST transitions don't affect time projection.
+  # Used to choose between RRule gem (daily+) and IceCube (hourly-).
+  DST_THRESHOLD = Recurrence.new(frequency: 'DAILY').freeze
+
   class << self
     def times_between(recurrence, project_from:, project_to:, dt_start_at: nil)
       dt_start_at ||= project_from
@@ -95,5 +99,5 @@ class RruleAdapter
   # so times need their hour set back 1.
   def dst_adjustment(datetime) = @dt_start_at.utc_offset - datetime.utc_offset
 
-  def dst_no_effect? = @recurrence <= Recurrence::DST_THRESHOLD
+  def dst_no_effect? = @recurrence <= DST_THRESHOLD
 end
