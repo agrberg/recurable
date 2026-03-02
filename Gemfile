@@ -14,4 +14,5 @@ group :development, :test do
   gem 'rubocop-rake'
   gem 'rubocop-rspec'
   gem 'simplecov'
+  gem 'sqlite3'
 end

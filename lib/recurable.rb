@@ -17,11 +17,12 @@ module Recurable
     include RruleUtils
 
     # This concern should only be used with a model that has an `rrule` string column.
-    serialize :rrule, RecurrenceSerializer, default: Recurrence.new(frequency: 'DAILY', interval: 1)
+    serialize :rrule, coder: RecurrenceSerializer, default: Recurrence.new(frequency: 'DAILY', interval: 1)
     alias_attribute :recurrence, :rrule
 
     delegate(*Recurrence::ATTRIBUTES.flat_map { |attr| [attr, :"#{attr}="] },
              *Recurrence::FREQUENCIES.each_key.map { |freq| :"#{freq.downcase}?" },
+             :by_month_day_option?, :by_set_pos_option?,
              to: :rrule)
 
     validates :by_day, array_inclusion: { in: Recurrence::BYDAY_PATTERN }, allow_blank: true
