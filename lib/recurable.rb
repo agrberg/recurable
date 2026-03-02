@@ -22,6 +22,15 @@ module Recurable
              *Recurrence::FREQUENCIES.each_key.map { |freq| :"#{freq.downcase}?" },
              to: :rrule)
 
+    validates :date_of_month, inclusion: { in: Recurrence::DATE_OF_MONTH_RANGE }, if: :date_of_month_option?
+    validates :day_of_month, inclusion: { in: Recurrence::DAYS_OF_WEEK }, if: :nth_day_option?
+    validates :day_of_week, inclusion: { in: Recurrence::DAYS_OF_WEEK }, allow_blank: true
+    validates :frequency, presence: true, inclusion: { in: Recurrence::FREQUENCIES.keys }
+    validates :interval, presence: true, numericality: { in: Recurrence::INTERVAL_RANGE }
+    validates :minute_of_hour, numericality: { in: Recurrence::MINUTE_OF_HOUR_RANGE }, allow_blank: true
+    validates :monthly_option, inclusion: { in: Recurrence::MONTHLY_OPTIONS }, allow_blank: true
+    validates :nth_day_of_month, inclusion: { in: Recurrence::NTH_DAY_OF_MONTH.values }, if: :nth_day_option?
+
     def recurrence_statement
       frequency_noun = I18n.t(frequency, scope: 'recurrence_form.frequency_nouns').pluralize(interval)
       I18n.t('recurrence_form.recurrence_statement', interval:, frequency_noun:)
@@ -35,17 +44,9 @@ module Recurable
       RruleAdapter.last_time_before(rrule, dt_start_at:, end_at:)
     end
 
-    # This overrides the prepending model's `valid?` method to also apply the recurrence object's interval validation
-    # and merge any errors into the including model's errors.
-    #
-    # NOTE: This is prepended so that the including model's validation is run first, and then the recurrence object's.
-    # NOTE: Many concerns can all do this without interfering with each other-- i.e., it is open/closed.
-    def valid?(context = nil)
-      including_model_valid = super
-      recurrence_valid = rrule.valid?
-      errors.merge! rrule.errors
+    private
 
-      including_model_valid && recurrence_valid
-    end
+    def date_of_month_option? = frequency == 'MONTHLY' && monthly_option == 'DATE'
+    def nth_day_option? = frequency == 'MONTHLY' && monthly_option == 'NTH_DAY'
   end
 end

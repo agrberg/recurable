@@ -163,10 +163,6 @@ RSpec.describe Recurrence do
         end
       end
     end
-
-    it 'is not valid if BYMONTHDAY is > 28' do
-      expect(described_class.from_rrule(rrule: 'FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=29')).not_to be_valid
-    end
   end
 
   describe '#nth_day_of_month=' do

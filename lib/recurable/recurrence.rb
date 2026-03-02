@@ -16,7 +16,7 @@ require_relative 'version'
 #
 #   recurrence = Recurrence.new(frequency: 'DAILY', interval: 1)
 #   recurrence.rrule   # => "FREQ=DAILY;INTERVAL=1"
-#   recurrence.valid?  # => true
+#   recurrence.daily?  # => true
 #
 class Recurrence
   include ActiveModel::Model
@@ -101,15 +101,6 @@ class Recurrence
   # Used by RruleAdapter to choose between RRule gem (daily+) and IceCube (hourly-).
   DST_THRESHOLD = new(frequency: 'DAILY').freeze
 
-  validates :date_of_month, inclusion: { in: DATE_OF_MONTH_RANGE }, if: :date_of_month_option?
-  validates :day_of_month, inclusion: { in: DAYS_OF_WEEK }, if: :nth_day_option?
-  validates :day_of_week, inclusion: { in: DAYS_OF_WEEK }, allow_blank: true
-  validates :frequency, presence: true, inclusion: { in: FREQUENCIES.keys }
-  validates :interval, presence: true, numericality: { in: INTERVAL_RANGE }
-  validates :minute_of_hour, numericality: { in: MINUTE_OF_HOUR_RANGE }, allow_blank: true
-  validates :monthly_option, inclusion: { in: MONTHLY_OPTIONS }, allow_blank: true
-  validates :nth_day_of_month, inclusion: { in: NTH_DAY_OF_MONTH.values }, if: :nth_day_option?
-
   class << self
     def from_rrule(rrule:)
       new(**attributes_from(parse_components(rrule)))
@@ -176,8 +167,4 @@ class Recurrence
     FREQUENCIES.keys.index(frequency) <=> FREQUENCIES.keys.index(other.frequency)
   end
 
-  private
-
-  def date_of_month_option? = frequency == 'MONTHLY' && monthly_option == 'DATE'
-  def nth_day_option? = frequency == 'MONTHLY' && monthly_option == 'NTH_DAY'
 end
