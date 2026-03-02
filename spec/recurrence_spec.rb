@@ -3,6 +3,22 @@
 require 'spec_helper'
 
 RSpec.describe Recurrence do
+  describe '.new' do
+    it 'raises ArgumentError for unknown attributes' do
+      expect { described_class.new(frequency: 'DAILY', bogus: 1) }
+        .to raise_error(ArgumentError, /Unknown attribute\(s\): bogus/)
+    end
+
+    it 'raises ArgumentError listing all unknown attributes' do
+      expect { described_class.new(foo: 1, bar: 2) }
+        .to raise_error(ArgumentError, /foo, bar/)
+    end
+
+    it 'accepts all valid attributes without error' do
+      expect { described_class.new(frequency: 'DAILY', interval: 1, count: 5) }.not_to raise_error
+    end
+  end
+
   describe 'constants' do
     it 'exposes FREQUENCIES in order with named constants' do
       expect(described_class::FREQUENCIES.keys).to eq %w[YEARLY MONTHLY WEEKLY DAILY HOURLY MINUTELY]

@@ -17,6 +17,9 @@ class Recurrence
   include Comparable
 
   def initialize(**attrs)
+    unknown = attrs.keys - ATTRIBUTES
+    raise ArgumentError, "Unknown attribute(s): #{unknown.join(', ')}" if unknown.any?
+
     attrs.each { |attr, value| public_send(:"#{attr}=", value) }
   end
 
