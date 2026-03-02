@@ -4,6 +4,8 @@ source 'https://rubygems.org'
 
 gemspec
 
+gem 'rrule', path: '../ruby-rrule'
+
 group :development, :test do
   gem 'activerecord', '>= 7.1' # needed for Recurable concern's serialize call
   gem 'rake'
