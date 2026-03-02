@@ -7,13 +7,13 @@ require_relative 'recurable/recurrence'
 require_relative 'recurable/rrule_utils'
 require_relative 'recurable/array_inclusion_validator'
 require_relative 'recurable/recurrence_serializer'
-# A concern to be prepended by ActiveRecord models that persist an rrule string to the database. This concern gives them
+# A concern to be included by ActiveRecord models that persist an rrule string to the database. This concern gives them
 # access to a Recurrence object (instead of an rrule string) which encapsulates user-friendly getters and
 # setters for the rrule, as well as validation, display, and projection concerns.
 module Recurable
   extend ActiveSupport::Concern
 
-  prepended do
+  included do
     include RruleUtils
 
     # This concern should only be used with a model that has an `rrule` string column.
