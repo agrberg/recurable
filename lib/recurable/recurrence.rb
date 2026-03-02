@@ -62,39 +62,23 @@ class Recurrence
   MONTH_OF_YEAR_RANGE = 1..12
   DAY_OF_YEAR_RANGE = ((-366..-1).to_a + (1..366).to_a).freeze
   WEEK_OF_YEAR_RANGE = ((-53..-1).to_a + (1..53).to_a).freeze
+  BYDAY_PATTERN = /\A[+-]?\d*(?:#{Regexp.union(DAYS_OF_WEEK).source})\z/
   # Parses an RRULE UNTIL string (e.g. "20261231T235959Z") into a Time object.
   UNTIL_PATTERN = /\A(?<Y>\d{4})(?<m>\d{2})(?<d>\d{2})T(?<H>\d{2})(?<M>\d{2})(?<S>\d{2})Z\z/
 
-  # Naming conventions for the monthly-related attributes:
-  #
-  #   date_of_month   — Numeric day of the month (1–28). Used with MONTHLY_DATE.
-  #                     Maps to RRULE's BYMONTHDAY component. Named "date" because it's a
-  #                     calendar date number, e.g. "the 15th of every month".
-  #
-  #   day_of_month    — Two-letter day-of-week string (SU/MO/TU/WE/TH/FR/SA).
-  #                     Used with MONTHLY_NTH_DAY for rules like "the 2nd Tuesday
-  #                     of every month". Maps to RRULE's BYDAY component. Named "day"
-  #                     because it identifies which weekday.
-  #
-  #   nth_day_of_month — Ordinal position within the month (1=first, 2=second, ... -1=last,
-  #                     -2=second-to-last). Paired with day_of_month to express rules like
-  #                     "the last Friday". Maps to RRULE's BYSETPOS component.
-  #
-  #   day_of_week     — Two-letter day-of-week string(s) for WEEKLY recurrences only.
-  #                     Also maps to BYDAY but in the weekly context (no BYSETPOS).
   ATTRIBUTES = %i[
-    count date_of_month day_of_month day_of_week day_of_year
-    frequency hour_of_day interval minute_of_hour month_of_year
-    nth_day_of_month repeat_until second_of_minute week_of_year week_start
+    by_day by_month_day by_set_pos count day_of_year frequency hour_of_day interval
+    minute_of_hour month_of_year repeat_until
+    second_of_minute week_of_year week_start
   ].freeze
 
   ARRAY_ATTRIBUTES = %i[
-    day_of_month day_of_week day_of_year hour_of_day
+    by_day by_month_day by_set_pos day_of_year hour_of_day minute_of_hour
     month_of_year second_of_minute week_of_year
   ].freeze
 
-  attr_accessor(*(ATTRIBUTES - ARRAY_ATTRIBUTES - %i[nth_day_of_month repeat_until]))
-  attr_reader :nth_day_of_month, :repeat_until, *ARRAY_ATTRIBUTES
+  attr_accessor(*(ATTRIBUTES - ARRAY_ATTRIBUTES - %i[repeat_until]))
+  attr_reader :repeat_until, *ARRAY_ATTRIBUTES
 
   class << self
     def from_rrule(rrule:)
@@ -114,21 +98,17 @@ class Recurrence
     end
 
     def attributes_from(components)
-      freq = components['FREQ']
-      byday = split_list(components['BYDAY'])
-
       {
+        by_day: split_list(components['BYDAY']),
+        by_month_day: split_int_list(components['BYMONTHDAY']),
+        by_set_pos: split_int_list(components['BYSETPOS']),
         count: components['COUNT']&.to_i,
-        date_of_month: components['BYMONTHDAY']&.to_i,
-        day_of_month: (byday if freq == 'MONTHLY'),
-        day_of_week: (byday if freq == 'WEEKLY'),
         day_of_year: split_int_list(components['BYYEARDAY']),
-        frequency: freq,
+        frequency: components['FREQ'],
         hour_of_day: split_int_list(components['BYHOUR']),
         interval: components['INTERVAL']&.to_i || 1,
-        minute_of_hour: components['BYMINUTE']&.to_i,
+        minute_of_hour: split_int_list(components['BYMINUTE']),
         month_of_year: split_int_list(components['BYMONTH']),
-        nth_day_of_month: components['BYSETPOS']&.to_i,
         repeat_until: components['UNTIL'],
         second_of_minute: split_int_list(components['BYSECOND']),
         week_of_year: split_int_list(components['BYWEEKNO']),
@@ -164,39 +144,33 @@ class Recurrence
   end
 
   def rrule
-    byday = join_list(day_of_week) || join_list(day_of_month)
-
     {
       'FREQ' => frequency,
       'INTERVAL' => interval,
       'COUNT' => non_blank(count),
       'UNTIL' => format_until(repeat_until),
-      'BYDAY' => byday,
-      'BYMONTHDAY' => non_blank(date_of_month),
+      'BYDAY' => join_list(by_day),
+      'BYMONTHDAY' => join_list(by_month_day),
       'BYMONTH' => join_list(month_of_year),
       'BYHOUR' => join_list(hour_of_day),
-      'BYMINUTE' => non_blank(minute_of_hour),
+      'BYMINUTE' => join_list(minute_of_hour),
       'BYSECOND' => join_list(second_of_minute),
       'BYYEARDAY' => join_list(day_of_year),
       'BYWEEKNO' => join_list(week_of_year),
-      'BYSETPOS' => non_blank(nth_day_of_month),
+      'BYSETPOS' => join_list(by_set_pos),
       'WKST' => non_blank(week_start)
     }.filter_map { |k, v| "#{k}=#{v}" unless v.nil? }.join(';')
   end
 
-  def nth_day_of_month=(value)
-    @nth_day_of_month = non_blank(value)&.to_i
-  end
-
   def monthly_option
     return unless frequency == 'MONTHLY'
-    return 'NTH_DAY' if nth_day_of_month && day_of_month&.any?
+    return 'NTH_DAY' if by_set_pos&.any? && by_day&.any?
 
-    'DATE' if date_of_month
+    'DATE' if by_month_day&.any?
   end
 
-  def date_of_month_option? = monthly_option == 'DATE'
-  def nth_day_option? = monthly_option == 'NTH_DAY'
+  def by_month_day_option? = monthly_option == 'DATE'
+  def by_set_pos_option? = monthly_option == 'NTH_DAY'
 
   def <=>(other)
     return super unless other.is_a?(self.class)

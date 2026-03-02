@@ -50,22 +50,21 @@ RSpec.describe Recurrence do
 
   describe '#rrule' do
     subject do
-      described_class.new(count:, date_of_month:, day_of_month:, day_of_week:, day_of_year:,
+      described_class.new(count:, by_month_day:, by_day:, day_of_year:,
                           frequency:, hour_of_day:, interval:, minute_of_hour:, month_of_year:,
-                          nth_day_of_month:, repeat_until:, second_of_minute:, week_of_year:,
-                          week_start:).rrule
+                          by_set_pos:, repeat_until:, second_of_minute:,
+                          week_of_year:, week_start:).rrule
     end
 
     let(:count) { nil }
-    let(:date_of_month) { nil }
-    let(:day_of_month) { nil }
-    let(:day_of_week) { nil }
+    let(:by_month_day) { nil }
+    let(:by_day) { nil }
     let(:day_of_year) { nil }
     let(:hour_of_day) { nil }
     let(:interval) { 10 }
     let(:minute_of_hour) { nil }
     let(:month_of_year) { nil }
-    let(:nth_day_of_month) { nil }
+    let(:by_set_pos) { nil }
     let(:repeat_until) { nil }
     let(:second_of_minute) { nil }
     let(:week_of_year) { nil }
@@ -85,14 +84,20 @@ RSpec.describe Recurrence do
       end
 
       context 'when there is a specific day of the month' do
-        let(:date_of_month) { 20 }
+        let(:by_month_day) { [20] }
 
         it { is_expected.to eq 'FREQ=MONTHLY;INTERVAL=10;BYMONTHDAY=20' }
       end
 
+      context 'with multiple BYMONTHDAY values' do
+        let(:by_month_day) { [1, 15] }
+
+        it { is_expected.to eq 'FREQ=MONTHLY;INTERVAL=10;BYMONTHDAY=1,15' }
+      end
+
       context 'when there is an nth day of the month' do
-        let(:day_of_month) { ['MO'] }
-        let(:nth_day_of_month) { -1 }
+        let(:by_day) { ['MO'] }
+        let(:by_set_pos) { [-1] }
 
         it { is_expected.to eq 'FREQ=MONTHLY;INTERVAL=10;BYDAY=MO;BYSETPOS=-1' }
       end
@@ -101,20 +106,20 @@ RSpec.describe Recurrence do
     context 'when frequency is weekly' do
       let(:frequency) { 'WEEKLY' }
 
-      context 'with set day_of_week' do
-        let(:day_of_week) { ['MO'] }
+      context 'with set by_day' do
+        let(:by_day) { ['MO'] }
 
         it { is_expected.to eq 'FREQ=WEEKLY;INTERVAL=10;BYDAY=MO' }
       end
 
-      context 'with multiple days of week' do
-        let(:day_of_week) { %w[MO WE FR] }
+      context 'with multiple by_day' do
+        let(:by_day) { %w[MO WE FR] }
 
         it { is_expected.to eq 'FREQ=WEEKLY;INTERVAL=10;BYDAY=MO,WE,FR' }
       end
 
-      context 'with a blank day_of_week' do
-        let(:day_of_week) { ' ' }
+      context 'with a blank by_day' do
+        let(:by_day) { ' ' }
 
         it { is_expected.to eq 'FREQ=WEEKLY;INTERVAL=10' }
       end
@@ -135,9 +140,16 @@ RSpec.describe Recurrence do
 
       context 'with set minute_of_hour' do
         let(:frequency) { 'HOURLY' }
-        let(:minute_of_hour) { 30 }
+        let(:minute_of_hour) { [30] }
 
         it { is_expected.to eq 'FREQ=HOURLY;INTERVAL=10;BYMINUTE=30' }
+      end
+
+      context 'with multiple BYMINUTE values' do
+        let(:frequency) { 'HOURLY' }
+        let(:minute_of_hour) { [0, 30] }
+
+        it { is_expected.to eq 'FREQ=HOURLY;INTERVAL=10;BYMINUTE=0,30' }
       end
     end
 
@@ -196,6 +208,21 @@ RSpec.describe Recurrence do
 
       it { is_expected.to eq 'FREQ=YEARLY;INTERVAL=10;BYWEEKNO=1,52' }
     end
+
+    context 'with YEARLY+BYDAY (ordinal weekday)' do
+      let(:frequency) { 'YEARLY' }
+      let(:by_day) { ['+2TH'] }
+
+      it { is_expected.to eq 'FREQ=YEARLY;INTERVAL=10;BYDAY=+2TH' }
+    end
+
+    context 'with multiple BYSETPOS values' do
+      let(:frequency) { 'MONTHLY' }
+      let(:by_set_pos) { [1, -1] }
+      let(:by_day) { ['FR'] }
+
+      it { is_expected.to eq 'FREQ=MONTHLY;INTERVAL=10;BYDAY=FR;BYSETPOS=1,-1' }
+    end
   end
 
   describe '#from_rrule' do
@@ -207,7 +234,7 @@ RSpec.describe Recurrence do
       ['FREQ=HOURLY;INTERVAL=10',
        { frequency: 'HOURLY', interval: 10 }],
       ['FREQ=HOURLY;INTERVAL=10;BYMINUTE=30',
-       { frequency: 'HOURLY', interval: 10, minute_of_hour: 30 }],
+       { frequency: 'HOURLY', interval: 10, minute_of_hour: [30] }],
       ['FREQ=DAILY;INTERVAL=10',
        { frequency: 'DAILY', interval: 10 }],
       ['FREQ=YEARLY;INTERVAL=10',
@@ -215,15 +242,17 @@ RSpec.describe Recurrence do
       ['FREQ=MONTHLY;INTERVAL=10',
        { frequency: 'MONTHLY', interval: 10 }],
       ['FREQ=MONTHLY;INTERVAL=10;BYMONTHDAY=10',
-       { frequency: 'MONTHLY', interval: 10, date_of_month: 10 }],
+       { frequency: 'MONTHLY', interval: 10, by_month_day: [10] }],
+      ['FREQ=MONTHLY;INTERVAL=10;BYMONTHDAY=1,15',
+       { frequency: 'MONTHLY', interval: 10, by_month_day: [1, 15] }],
       ['FREQ=MONTHLY;INTERVAL=10;BYDAY=WE;BYSETPOS=-1',
-       { frequency: 'MONTHLY', interval: 10, day_of_month: ['WE'], nth_day_of_month: -1 }],
+       { frequency: 'MONTHLY', interval: 10, by_set_pos: [-1], by_day: ['WE'] }],
       ['FREQ=WEEKLY;INTERVAL=10;',
        { frequency: 'WEEKLY', interval: 10 }],
       ['FREQ=WEEKLY;INTERVAL=10;BYDAY=WE',
-       { frequency: 'WEEKLY', interval: 10, day_of_week: ['WE'] }],
+       { frequency: 'WEEKLY', interval: 10, by_day: ['WE'] }],
       ['FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE,FR',
-       { frequency: 'WEEKLY', interval: 2, day_of_week: %w[MO WE FR] }],
+       { frequency: 'WEEKLY', interval: 2, by_day: %w[MO WE FR] }],
       ['FREQ=DAILY;INTERVAL=1;COUNT=10',
        { frequency: 'DAILY', interval: 1, count: 10 }],
       ['FREQ=DAILY;INTERVAL=1;UNTIL=20261231T235959Z',
@@ -232,8 +261,12 @@ RSpec.describe Recurrence do
        { frequency: 'WEEKLY', interval: 1, week_start: 'MO' }],
       ['FREQ=YEARLY;INTERVAL=1;BYMONTH=1,6',
        { frequency: 'YEARLY', interval: 1, month_of_year: [1, 6] }],
+      ['FREQ=YEARLY;INTERVAL=1;BYDAY=+2TH',
+       { frequency: 'YEARLY', interval: 1, by_day: ['+2TH'] }],
       ['FREQ=DAILY;INTERVAL=1;BYHOUR=9,17',
        { frequency: 'DAILY', interval: 1, hour_of_day: [9, 17] }],
+      ['FREQ=HOURLY;INTERVAL=1;BYMINUTE=0,30',
+       { frequency: 'HOURLY', interval: 1, minute_of_hour: [0, 30] }],
       ['FREQ=MINUTELY;INTERVAL=1;BYSECOND=0,30',
        { frequency: 'MINUTELY', interval: 1, second_of_minute: [0, 30] }],
       ['FREQ=YEARLY;INTERVAL=1;BYYEARDAY=1,-1',
@@ -243,8 +276,8 @@ RSpec.describe Recurrence do
     ].freeze
 
     recurrence_form_attrs = %i[
-      count date_of_month day_of_month day_of_week day_of_year frequency
-      hour_of_day interval month_of_year nth_day_of_month repeat_until
+      by_day by_month_day by_set_pos count day_of_year frequency
+      hour_of_day interval minute_of_hour month_of_year repeat_until
       second_of_minute week_of_year week_start
     ]
 
@@ -261,61 +294,53 @@ RSpec.describe Recurrence do
     end
   end
 
-  describe '#nth_day_of_month=' do
-    it 'coerces string values to integers' do
-      recurrence = described_class.new
-      recurrence.nth_day_of_month = '2'
-      expect(recurrence.nth_day_of_month).to eq 2
-    end
-
-    it 'coerces negative string values to integers' do
-      recurrence = described_class.new
-      recurrence.nth_day_of_month = '-1'
-      expect(recurrence.nth_day_of_month).to eq(-1)
-    end
-
-    it 'sets nil for nil input' do
-      recurrence = described_class.new
-      recurrence.nth_day_of_month = nil
-      expect(recurrence.nth_day_of_month).to be_nil
-    end
-
-    it 'sets nil for empty string input' do
-      recurrence = described_class.new
-      recurrence.nth_day_of_month = ''
-      expect(recurrence.nth_day_of_month).to be_nil
-    end
-  end
-
   describe 'array attribute setters' do
     it 'coerces a scalar to a single-element array' do
       recurrence = described_class.new
-      recurrence.day_of_week = 'MO'
-      expect(recurrence.day_of_week).to eq ['MO']
+      recurrence.by_day = 'MO'
+      expect(recurrence.by_day).to eq ['MO']
     end
 
     it 'passes through an array unchanged' do
       recurrence = described_class.new
-      recurrence.day_of_week = %w[MO WE FR]
-      expect(recurrence.day_of_week).to eq %w[MO WE FR]
+      recurrence.by_day = %w[MO WE FR]
+      expect(recurrence.by_day).to eq %w[MO WE FR]
     end
 
     it 'sets nil for nil input' do
       recurrence = described_class.new
-      recurrence.day_of_week = nil
-      expect(recurrence.day_of_week).to be_nil
+      recurrence.by_day = nil
+      expect(recurrence.by_day).to be_nil
     end
 
     it 'normalizes empty array to nil' do
       recurrence = described_class.new
-      recurrence.day_of_week = []
-      expect(recurrence.day_of_week).to be_nil
+      recurrence.by_day = []
+      expect(recurrence.by_day).to be_nil
     end
 
     it 'works for integer array attributes' do
       recurrence = described_class.new
       recurrence.hour_of_day = 9
       expect(recurrence.hour_of_day).to eq [9]
+    end
+
+    it 'works for by_set_pos' do
+      recurrence = described_class.new
+      recurrence.by_set_pos = -1
+      expect(recurrence.by_set_pos).to eq [-1]
+    end
+
+    it 'works for by_month_day' do
+      recurrence = described_class.new
+      recurrence.by_month_day = 15
+      expect(recurrence.by_month_day).to eq [15]
+    end
+
+    it 'works for minute_of_hour' do
+      recurrence = described_class.new
+      recurrence.minute_of_hour = 30
+      expect(recurrence.minute_of_hour).to eq [30]
     end
   end
 
@@ -348,30 +373,44 @@ RSpec.describe Recurrence do
   end
 
   describe '#monthly_option' do
-    it 'returns DATE when date_of_month is set' do
-      recurrence = described_class.new(frequency: 'MONTHLY', date_of_month: 15)
+    it 'returns DATE when by_month_day is set' do
+      recurrence = described_class.new(frequency: 'MONTHLY', by_month_day: [15])
       expect(recurrence.monthly_option).to eq 'DATE'
-      expect(recurrence).to be_date_of_month_option
-      expect(recurrence).not_to be_nth_day_option
+      expect(recurrence).to be_by_month_day_option
+      expect(recurrence).not_to be_by_set_pos_option
     end
 
-    it 'returns NTH_DAY when nth_day_of_month and day_of_month are set' do
-      recurrence = described_class.new(frequency: 'MONTHLY', day_of_month: ['FR'], nth_day_of_month: -1)
+    it 'returns NTH_DAY when by_set_pos and by_day are set' do
+      recurrence = described_class.new(frequency: 'MONTHLY', by_day: ['FR'], by_set_pos: [-1])
       expect(recurrence.monthly_option).to eq 'NTH_DAY'
-      expect(recurrence).to be_nth_day_option
-      expect(recurrence).not_to be_date_of_month_option
+      expect(recurrence).to be_by_set_pos_option
+      expect(recurrence).not_to be_by_month_day_option
     end
 
     it 'returns nil for non-monthly frequencies' do
       recurrence = described_class.new(frequency: 'DAILY', interval: 1)
       expect(recurrence.monthly_option).to be_nil
-      expect(recurrence).not_to be_date_of_month_option
-      expect(recurrence).not_to be_nth_day_option
+      expect(recurrence).not_to be_by_month_day_option
+      expect(recurrence).not_to be_by_set_pos_option
     end
 
     it 'returns nil for monthly with no day specifier' do
       recurrence = described_class.new(frequency: 'MONTHLY', interval: 1)
       expect(recurrence.monthly_option).to be_nil
+    end
+  end
+
+  describe 'BYDAY_PATTERN' do
+    %w[MO TU WE TH FR SA SU +2TH -1FR 3WE].each do |valid|
+      it "matches #{valid}" do
+        expect(valid).to match(described_class::BYDAY_PATTERN)
+      end
+    end
+
+    %w[XX 2 +MO2 MONDAY].each do |invalid|
+      it "rejects #{invalid}" do
+        expect(invalid).not_to match(described_class::BYDAY_PATTERN)
+      end
     end
   end
 

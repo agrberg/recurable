@@ -26,20 +26,20 @@ RSpec.describe RecurrenceSerializer do
     end
 
     it 'returns the rrule string for a Recurrence object' do
-      recurrence = Recurrence.new(frequency: 'WEEKLY', interval: 2, day_of_week: %w[MO TU])
+      recurrence = Recurrence.new(frequency: 'WEEKLY', interval: 2, by_day: %w[MO TU])
       expect(described_class.dump(recurrence)).to eq('FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TU')
     end
   end
 
   describe 'round-trip' do
     it 'preserves data through dump then load' do
-      original = Recurrence.new(frequency: 'MONTHLY', interval: 3, date_of_month: 15)
+      original = Recurrence.new(frequency: 'MONTHLY', interval: 3, by_month_day: [15])
       rrule_string = described_class.dump(original)
       restored = described_class.load(rrule_string)
 
       expect(restored.frequency).to eq(original.frequency)
       expect(restored.interval).to eq(original.interval)
-      expect(restored.date_of_month).to eq(original.date_of_month)
+      expect(restored.by_month_day).to eq(original.by_month_day)
       expect(restored.rrule).to eq(original.rrule)
     end
 
@@ -63,9 +63,21 @@ RSpec.describe RecurrenceSerializer do
     end
 
     it 'preserves multi-value BYDAY through round-trip' do
-      original = Recurrence.new(frequency: 'WEEKLY', interval: 1, day_of_week: %w[MO WE FR])
+      original = Recurrence.new(frequency: 'WEEKLY', interval: 1, by_day: %w[MO WE FR])
       restored = described_class.load(described_class.dump(original))
-      expect(restored.day_of_week).to eq(%w[MO WE FR])
+      expect(restored.by_day).to eq(%w[MO WE FR])
+    end
+
+    it 'preserves multi-value BYMONTHDAY through round-trip' do
+      original = Recurrence.new(frequency: 'MONTHLY', interval: 1, by_month_day: [1, 15])
+      restored = described_class.load(described_class.dump(original))
+      expect(restored.by_month_day).to eq([1, 15])
+    end
+
+    it 'preserves ordinal BYDAY through round-trip' do
+      original = Recurrence.new(frequency: 'YEARLY', interval: 1, by_day: ['+2TH'])
+      restored = described_class.load(described_class.dump(original))
+      expect(restored.by_day).to eq(['+2TH'])
     end
   end
 end
