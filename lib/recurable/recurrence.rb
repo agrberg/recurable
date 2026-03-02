@@ -2,7 +2,6 @@
 
 require 'active_model'
 require 'active_support/core_ext/object/inclusion'
-require 'active_support/core_ext/string/inflections'
 
 require 'date'
 require_relative 'version'
@@ -165,11 +164,6 @@ class Recurrence
       'BYMINUTE' => minute_of_hour.presence,
       'BYSETPOS' => nth_day_of_month.presence
     }.filter_map { |k, v| "#{k}=#{v}" if v.present? }.join(';')
-  end
-
-  def recurrence_statement
-    frequency_noun = I18n.t(frequency, scope: 'recurrence_form.frequency_nouns').pluralize(interval)
-    I18n.t('recurrence_form.recurrence_statement', interval:, frequency_noun:)
   end
 
   def nth_day_of_month=(value)

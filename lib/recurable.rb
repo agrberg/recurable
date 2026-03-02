@@ -20,7 +20,12 @@ module Recurable
 
     delegate(*Recurrence::DELEGATED_ATTRIBUTES.flat_map { |attr| [attr, :"#{attr}="] },
              *Recurrence::FREQUENCIES.each_key.map { |freq| :"#{freq.downcase}?" },
-             :recurrence_statement, to: :rrule)
+             to: :rrule)
+
+    def recurrence_statement
+      frequency_noun = I18n.t(frequency, scope: 'recurrence_form.frequency_nouns').pluralize(interval)
+      I18n.t('recurrence_form.recurrence_statement', interval:, frequency_noun:)
+    end
 
     def recurrence_times(project_from:, project_to:, dt_start_at: nil)
       RruleAdapter.times_between(rrule, project_from:, project_to:, dt_start_at:)
