@@ -8,8 +8,8 @@ RSpec.describe RruleUtils do
   describe '#recurrence_times DST handling' do
     around { |test| Time.use_zone('America/New_York', &test) }
 
-    let(:daily_recurrence) { Recurrence.from_rrule(rrule: 'FREQ=DAILY;INTERVAL=1') }
-    let(:hourly_recurrence) { Recurrence.from_rrule(rrule: 'FREQ=HOURLY;INTERVAL=1') }
+    let(:daily_recurrence) { Recurrence.from_rrule('FREQ=DAILY;INTERVAL=1') }
+    let(:hourly_recurrence) { Recurrence.from_rrule('FREQ=HOURLY;INTERVAL=1') }
 
     context 'when moving from ST => DST' do
       let(:dt_start_at) { Time.zone.local(2023, 3, 1) }
@@ -93,7 +93,7 @@ RSpec.describe RruleUtils do
   describe '#recurrence_times' do
     it 'correctly generates recurrences given a dt_start_at' do
       Time.use_zone('America/Chicago') do
-        recurrence = Recurrence.from_rrule(rrule: 'FREQ=DAILY;INTERVAL=1')
+        recurrence = Recurrence.from_rrule('FREQ=DAILY;INTERVAL=1')
         model = Struct.new(:recurrence).new(recurrence).extend(described_class)
         dt_start_at = Time.zone.local(2023, 1, 1, 11, 0)
         project_from = Time.zone.local(2023, 1, 1, 12, 0)
@@ -107,7 +107,7 @@ RSpec.describe RruleUtils do
 
     it 'uses project_from as dt_start_at if not passed' do
       Time.use_zone('America/Chicago') do
-        recurrence = Recurrence.from_rrule(rrule: 'FREQ=DAILY;INTERVAL=1')
+        recurrence = Recurrence.from_rrule('FREQ=DAILY;INTERVAL=1')
         model = Struct.new(:recurrence).new(recurrence).extend(described_class)
         project_from = Time.zone.local(2023, 1, 1, 12, 0)
         project_to = Time.zone.local(2023, 1, 2, 12, 0)
@@ -120,9 +120,9 @@ RSpec.describe RruleUtils do
   end
 
   describe '#last_recurrence_time_before' do
-    subject(:last_recurrence_time) { model.last_recurrence_time_before(dt_start_at:, end_at:) }
+    subject(:last_recurrence_time) { model.last_recurrence_time_before(end_at, dt_start_at:) }
 
-    let(:recurrence) { Recurrence.from_rrule(rrule:) }
+    let(:recurrence) { Recurrence.from_rrule(rrule) }
     let(:dt_start_at) { Time.zone.parse('2019-01-01 00:00:00') }
     let(:end_at) { Time.zone.parse('2022-12-31 23:59:59') }
 
@@ -191,9 +191,9 @@ RSpec.describe RruleUtils do
   end
 
   describe '#next_recurrence_time_after' do
-    subject(:next_recurrence_time) { model.next_recurrence_time_after(dt_start_at:, after:) }
+    subject(:next_recurrence_time) { model.next_recurrence_time_after(after, dt_start_at:) }
 
-    let(:recurrence) { Recurrence.from_rrule(rrule:) }
+    let(:recurrence) { Recurrence.from_rrule(rrule) }
     let(:dt_start_at) { Time.zone.parse('2019-01-01 00:00:00') }
     let(:after) { Time.zone.parse('2022-12-31 23:59:59') }
 
@@ -263,7 +263,7 @@ RSpec.describe RruleUtils do
 
   describe '#humanize_recurrence' do
     def build_model(rrule_str)
-      Struct.new(:recurrence).new(Recurrence.from_rrule(rrule: rrule_str)).extend(described_class)
+      Struct.new(:recurrence).new(Recurrence.from_rrule(rrule_str)).extend(described_class)
     end
 
     it 'delegates daily+ to RRule::Rule#humanize' do

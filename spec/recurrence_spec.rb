@@ -226,7 +226,7 @@ RSpec.describe Recurrence do
   end
 
   describe '#from_rrule' do
-    subject { described_class.from_rrule(rrule:) }
+    subject { described_class.from_rrule(rrule) }
 
     cases = [
       ['FREQ=MINUTELY;INTERVAL=10',

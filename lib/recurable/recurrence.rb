@@ -81,7 +81,7 @@ class Recurrence
   attr_reader :repeat_until, *ARRAY_ATTRIBUTES
 
   class << self
-    def from_rrule(rrule:)
+    def from_rrule(rrule)
       new(**attributes_from(parse_components(rrule)))
     end
 

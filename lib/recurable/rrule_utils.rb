@@ -14,12 +14,12 @@ module RruleUtils
                .uniq
   end
 
-  def last_recurrence_time_before(dt_start_at:, end_at:)
-    project_from = (Recurrence::FREQUENCIES[recurrence.frequency] * recurrence.interval).days.ago(end_at)
-    recurrence_times(project_from:, project_to: end_at, dt_start_at:).last
+  def last_recurrence_time_before(before, dt_start_at:)
+    project_from = (Recurrence::FREQUENCIES[recurrence.frequency] * recurrence.interval).days.ago(before)
+    recurrence_times(project_from:, project_to: before, dt_start_at:).last
   end
 
-  def next_recurrence_time_after(dt_start_at:, after:)
+  def next_recurrence_time_after(after, dt_start_at:)
     project_to = (Recurrence::FREQUENCIES[recurrence.frequency] * recurrence.interval).days.since(after)
     recurrence_times(project_from: after, project_to:, dt_start_at:).first
   end
