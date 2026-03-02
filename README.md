@@ -43,7 +43,7 @@ plan.date_of_month = 15
 plan.rrule          # => #<Recurrence> with rrule "FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=15"
 plan.valid?         # validates both the model and the recurrence
 plan.monthly?       # => true
-plan.recurrence_statement # => "Repeats every 3 months."
+plan.humanize_recurrence  # => "every 3 months on the 15th"
 ```
 
 ## Installation
