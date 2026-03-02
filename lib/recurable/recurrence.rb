@@ -47,6 +47,9 @@ class Recurrence
 
   # Exposes class constants: Recurrence::MONTHLY_DATE => 'DATE', Recurrence::MONTHLY_NTH_DAY => 'NTH_DAY'.
   MONTHLY_OPTIONS = %w[DATE NTH_DAY].each { |opt| const_set("MONTHLY_#{opt}", opt) }.freeze
+  # Maps symbolic positions to iCal BYSETPOS integers. Positive 1–4 covers typical forward
+  # positions; negative -1/-2 covers "last" and "second to last" (deeper negatives are better
+  # expressed counting forward). A month has at most 5 of any single weekday.
   NTH_DAY_OF_MONTH = {
     first: 1,
     second: 2,
@@ -56,7 +59,9 @@ class Recurrence
     second_to_last: -2
   }.freeze
 
-  DATE_OF_MONTH_RANGE = 1..28
+  # Positive = calendar date (1st–28th), negative = from end (-1 = last day, -2 = second to last).
+  # Capped at ±28 because February has 28 days in a common year.
+  DATE_OF_MONTH_RANGE = ((-28..-1).to_a + (1..28).to_a).freeze
   INTERVAL_RANGE = 1..12
   MINUTE_OF_HOUR_RANGE = 0..59
 
@@ -98,7 +103,7 @@ class Recurrence
   # Used by RruleAdapter to choose between RRule gem (daily+) and IceCube (hourly-).
   DST_THRESHOLD = new(frequency: 'DAILY').freeze
 
-  validates :date_of_month, numericality: { in: DATE_OF_MONTH_RANGE }, if: :date_of_month_option?
+  validates :date_of_month, inclusion: { in: DATE_OF_MONTH_RANGE }, if: :date_of_month_option?
   validates :day_of_month, inclusion: { in: DAYS_OF_WEEK }, if: :nth_day_option?
   validates :day_of_week, inclusion: { in: DAYS_OF_WEEK }, allow_blank: true
   validates :frequency, presence: true, inclusion: { in: FREQUENCIES.keys }
