@@ -18,7 +18,7 @@ module Recurable
     # This concern should only be used with a model that has an `rrule` string column.
     serialize :rrule, RecurrenceSerializer, default: Recurrence.new(frequency: 'DAILY', interval: 1)
 
-    delegate(*Recurrence::DELEGATED_ATTRIBUTES.flat_map { |attr| [attr, :"#{attr}="] },
+    delegate(*Recurrence::ATTRIBUTES.flat_map { |attr| [attr, :"#{attr}="] },
              *Recurrence::FREQUENCIES.each_key.map { |freq| :"#{freq.downcase}?" },
              to: :rrule)
 

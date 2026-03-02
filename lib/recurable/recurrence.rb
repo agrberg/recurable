@@ -59,11 +59,6 @@ class Recurrence
   INTERVAL_RANGE = 1..12
   MINUTE_OF_HOUR_RANGE = 0..59
 
-  DELEGATED_ATTRIBUTES = %i[
-    date_of_month day_of_month day_of_week frequency
-    interval minute_of_hour monthly_option nth_day_of_month
-  ].freeze
-
   # Naming conventions for the monthly-related attributes:
   #
   #   date_of_month   — Numeric day of the month (1–28). Used with MONTHLY_DATE.
@@ -81,16 +76,12 @@ class Recurrence
   #
   #   day_of_week     — Two-letter day-of-week string for WEEKLY recurrences only.
   #                     Also maps to BYDAY but in the weekly context (no BYSETPOS).
-  attr_accessor(
-    :date_of_month,
-    :day_of_month,
-    :day_of_week,
-    :frequency,
-    :interval,
-    :minute_of_hour,
-    :monthly_option
-  )
+  ATTRIBUTES = %i[
+    date_of_month day_of_month day_of_week frequency
+    interval minute_of_hour monthly_option nth_day_of_month
+  ].freeze
 
+  attr_accessor(*(ATTRIBUTES - [:nth_day_of_month]))
   attr_reader :nth_day_of_month # Setter is overridden below to coerce strings to integers
 
   # Highest frequency where DST transitions don't affect time projection.
