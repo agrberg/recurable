@@ -9,5 +9,5 @@ class RecurrenceSerializer
     Recurrence.from_rrule(rrule) if rrule.present?
   end
 
-  def self.dump(recurrence_instance) = recurrence_instance&.rrule
+  def self.dump(recurrence_instance) = recurrence_instance&.to_rrule
 end

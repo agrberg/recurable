@@ -40,7 +40,7 @@ RSpec.describe RecurrenceSerializer do
       expect(restored.frequency).to eq(original.frequency)
       expect(restored.interval).to eq(original.interval)
       expect(restored.by_month_day).to eq(original.by_month_day)
-      expect(restored.rrule).to eq(original.rrule)
+      expect(restored.to_rrule).to eq(original.to_rrule)
     end
 
     it 'preserves COUNT through round-trip' do

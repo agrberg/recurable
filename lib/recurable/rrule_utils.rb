@@ -9,7 +9,7 @@ module RruleUtils
 
   def recurrence_times(project_from:, project_to:, dt_start_at: nil)
     dt_start_at ||= project_from
-    RRule::Rule.new(recurrence.rrule, dtstart: dt_start_at, tzid: Time.zone.tzinfo.identifier)
+    RRule::Rule.new(recurrence.to_rrule, dtstart: dt_start_at, tzid: Time.zone.tzinfo.identifier)
                .between(project_from, project_to)
                .uniq
   end
@@ -26,7 +26,7 @@ module RruleUtils
 
   def humanize_recurrence
     noun = SUB_DAILY_NOUNS[recurrence.frequency]
-    return RRule::Rule.new(recurrence.rrule).humanize unless noun
+    return RRule::Rule.new(recurrence.to_rrule).humanize unless noun
 
     "every #{recurrence.interval == 1 ? noun : "#{recurrence.interval} #{noun}s"}"
   end

@@ -143,7 +143,7 @@ class Recurrence
                     end
   end
 
-  def rrule
+  def to_rrule
     {
       'FREQ' => frequency,
       'INTERVAL' => interval,

@@ -53,7 +53,7 @@ RSpec.describe Recurrence do
       described_class.new(count:, by_month_day:, by_day:, day_of_year:,
                           frequency:, hour_of_day:, interval:, minute_of_hour:, month_of_year:,
                           by_set_pos:, repeat_until:, second_of_minute:,
-                          week_of_year:, week_start:).rrule
+                          week_of_year:, week_start:).to_rrule
     end
 
     let(:count) { nil }
