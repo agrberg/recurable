@@ -3,6 +3,25 @@
 require 'spec_helper'
 
 RSpec.describe Recurrence do
+  describe 'constants' do
+    it 'exposes FREQUENCIES in order with named constants' do
+      expect(described_class::FREQUENCIES.keys).to eq %w[YEARLY MONTHLY WEEKLY DAILY HOURLY MINUTELY]
+      expect(described_class::DAILY).to eq 'DAILY'
+    end
+
+    it 'derives DAYS_OF_WEEK from Date::DAYNAMES with named constants' do
+      expect(described_class::DAYS_OF_WEEK).to eq %w[SU MO TU WE TH FR SA]
+      expect(described_class::SUNDAY).to eq 'SU'
+      expect(described_class::MONDAY).to eq 'MO'
+    end
+
+    it 'exposes MONTHLY_OPTIONS with prefixed named constants' do
+      expect(described_class::MONTHLY_OPTIONS).to eq %w[DATE NTH_DAY]
+      expect(described_class::MONTHLY_DATE).to eq 'DATE'
+      expect(described_class::MONTHLY_NTH_DAY).to eq 'NTH_DAY'
+    end
+  end
+
   describe '#rrule' do
     subject do
       described_class.new(date_of_month:, day_of_month:, day_of_week:, frequency:, interval:, minute_of_hour:,
@@ -17,13 +36,13 @@ RSpec.describe Recurrence do
     let(:nth_day_of_month) { nil }
 
     context 'when frequency is yearly' do
-      let(:frequency) { described_class::Frequencies::YEARLY }
+      let(:frequency) { 'YEARLY' }
 
       it { is_expected.to eq 'FREQ=YEARLY;INTERVAL=10' }
     end
 
     context 'when frequency is monthly' do
-      let(:frequency) { described_class::Frequencies::MONTHLY }
+      let(:frequency) { 'MONTHLY' }
 
       context 'when there is not specific day of month' do
         it { is_expected.to eq 'FREQ=MONTHLY;INTERVAL=10' }
@@ -36,7 +55,7 @@ RSpec.describe Recurrence do
       end
 
       context 'when there is an nth day of the month' do
-        let(:day_of_month) { described_class::ByDayValues::MONDAY }
+        let(:day_of_month) { 'MO' }
         let(:nth_day_of_month) { -1 }
 
         it { is_expected.to eq 'FREQ=MONTHLY;INTERVAL=10;BYDAY=MO;BYSETPOS=-1' }
@@ -44,10 +63,10 @@ RSpec.describe Recurrence do
     end
 
     context 'when frequency is weekly' do
-      let(:frequency) { described_class::Frequencies::WEEKLY }
+      let(:frequency) { 'WEEKLY' }
 
       context 'with set day_of_week' do
-        let(:day_of_week) { described_class::ByDayValues::MONDAY }
+        let(:day_of_week) { 'MO' }
 
         it { is_expected.to eq 'FREQ=WEEKLY;INTERVAL=10;BYDAY=MO' }
       end
@@ -60,20 +79,20 @@ RSpec.describe Recurrence do
     end
 
     context 'when frequency is daily' do
-      let(:frequency) { described_class::Frequencies::DAILY }
+      let(:frequency) { 'DAILY' }
 
       it { is_expected.to eq 'FREQ=DAILY;INTERVAL=10' }
     end
 
     context 'when frequency is hourly' do
       context 'with blank minute_of_hour' do
-        let(:frequency) { described_class::Frequencies::HOURLY }
+        let(:frequency) { 'HOURLY' }
 
         it { is_expected.to eq 'FREQ=HOURLY;INTERVAL=10' }
       end
 
       context 'with set minute_of_hour' do
-        let(:frequency) { described_class::Frequencies::HOURLY }
+        let(:frequency) { 'HOURLY' }
         let(:minute_of_hour) { 30 }
 
         it { is_expected.to eq 'FREQ=HOURLY;INTERVAL=10;BYMINUTE=30' }
@@ -98,29 +117,26 @@ RSpec.describe Recurrence do
 
     cases = [
       ['FREQ=MINUTELY;INTERVAL=10',
-       { frequency: described_class::Frequencies::MINUTELY, interval: 10 }],
+       { frequency: 'MINUTELY', interval: 10 }],
       ['FREQ=HOURLY;INTERVAL=10',
-       { frequency: described_class::Frequencies::HOURLY, interval: 10 }],
+       { frequency: 'HOURLY', interval: 10 }],
       ['FREQ=HOURLY;INTERVAL=10;BYMINUTE=30',
-       { frequency: described_class::Frequencies::HOURLY, interval: 10, minute_of_hour: 30 }],
+       { frequency: 'HOURLY', interval: 10, minute_of_hour: 30 }],
       ['FREQ=DAILY;INTERVAL=10',
-       { frequency: described_class::Frequencies::DAILY, interval: 10 }],
+       { frequency: 'DAILY', interval: 10 }],
       ['FREQ=YEARLY;INTERVAL=10',
-       { frequency: described_class::Frequencies::YEARLY, interval: 10 }],
+       { frequency: 'YEARLY', interval: 10 }],
       ['FREQ=MONTHLY;INTERVAL=10',
-       { frequency: described_class::Frequencies::MONTHLY, interval: 10 }],
+       { frequency: 'MONTHLY', interval: 10 }],
       ['FREQ=MONTHLY;INTERVAL=10;BYMONTHDAY=10',
-       { frequency: described_class::Frequencies::MONTHLY, interval: 10, date_of_month: 10,
-         monthly_option: described_class::MonthlyOptions::DATE }],
+       { frequency: 'MONTHLY', interval: 10, date_of_month: 10, monthly_option: 'DATE' }],
       ['FREQ=MONTHLY;INTERVAL=10;BYDAY=WE;BYSETPOS=-1',
-       { frequency: described_class::Frequencies::MONTHLY, interval: 10,
-         day_of_month: described_class::ByDayValues::WEDNESDAY,
-         nth_day_of_month: -1, monthly_option: described_class::MonthlyOptions::NTH_DAY }],
+       { frequency: 'MONTHLY', interval: 10, day_of_month: 'WE',
+         nth_day_of_month: -1, monthly_option: 'NTH_DAY' }],
       ['FREQ=WEEKLY;INTERVAL=10;',
-       { frequency: described_class::Frequencies::WEEKLY, interval: 10 }],
+       { frequency: 'WEEKLY', interval: 10 }],
       ['FREQ=WEEKLY;INTERVAL=10;BYDAY=WE',
-       { frequency: described_class::Frequencies::WEEKLY, interval: 10,
-         day_of_week: described_class::ByDayValues::WEDNESDAY }]
+       { frequency: 'WEEKLY', interval: 10, day_of_week: 'WE' }]
     ].freeze
 
     recurrence_form_attrs = %i[date_of_month day_of_month day_of_week frequency interval monthly_option
@@ -175,8 +191,8 @@ RSpec.describe Recurrence do
 
   describe 'Comparable comparator functions' do
     it 'compares frequencies scientifically' do
-      smaller_frequency = described_class.new(frequency: Recurrence::Frequencies::YEARLY)
-      larger_frequency = described_class.new(frequency: Recurrence::Frequencies::HOURLY)
+      smaller_frequency = described_class.new(frequency: 'YEARLY')
+      larger_frequency = described_class.new(frequency: 'HOURLY')
 
       expect(smaller_frequency).to be < larger_frequency
       expect(larger_frequency).to be > smaller_frequency
@@ -184,13 +200,13 @@ RSpec.describe Recurrence do
     end
 
     it 'returns nil when compared to a non-Recurrence object' do
-      recurrence = described_class.new(frequency: Recurrence::Frequencies::DAILY)
+      recurrence = described_class.new(frequency: 'DAILY')
       expect(recurrence <=> 'not a recurrence').to be_nil
     end
 
     it 'returns 0 for equal frequencies' do
-      a = described_class.new(frequency: Recurrence::Frequencies::WEEKLY, interval: 1)
-      b = described_class.new(frequency: Recurrence::Frequencies::WEEKLY, interval: 5)
+      a = described_class.new(frequency: 'WEEKLY', interval: 1)
+      b = described_class.new(frequency: 'WEEKLY', interval: 5)
       expect(a <=> b).to eq 0
     end
   end

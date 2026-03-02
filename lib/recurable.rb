@@ -36,7 +36,7 @@ module Recurable
 
     # Defines a method for each frequency that returns true if the recurrence's frequency matches the method name.
     # E.g., `sample_plan.yearly?` will return true if `sample_plan.frequency` is "YEARLY".
-    Recurrence::FREQUENCY_VALUES.each do |frequency|
+    Recurrence::FREQUENCIES.each_key do |frequency|
       define_method(:"#{frequency.downcase}?") { frequency == self.frequency }
     end
   end
