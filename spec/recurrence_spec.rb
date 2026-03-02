@@ -22,6 +22,24 @@ RSpec.describe Recurrence do
     end
   end
 
+  describe 'frequency predicates' do
+    it 'returns true for the matching frequency' do
+      described_class::FREQUENCIES.each_key do |frequency|
+        recurrence = described_class.new(frequency:, interval: 1)
+        expect(recurrence.public_send(:"#{frequency.downcase}?")).to be true
+      end
+    end
+
+    it 'returns false for non-matching frequencies' do
+      recurrence = described_class.new(frequency: 'DAILY', interval: 1)
+      expect(recurrence).not_to be_yearly
+      expect(recurrence).not_to be_monthly
+      expect(recurrence).not_to be_weekly
+      expect(recurrence).not_to be_hourly
+      expect(recurrence).not_to be_minutely
+    end
+  end
+
   describe '#rrule' do
     subject do
       described_class.new(date_of_month:, day_of_month:, day_of_week:, frequency:, interval:, minute_of_hour:,
@@ -97,18 +115,6 @@ RSpec.describe Recurrence do
 
         it { is_expected.to eq 'FREQ=HOURLY;INTERVAL=10;BYMINUTE=30' }
       end
-    end
-  end
-
-  describe '#with_defaults' do
-    subject { described_class.with_defaults }
-
-    it 'has its default values for everything' do
-      expect(subject.rrule).to eq 'FREQ=DAILY;INTERVAL=1'
-      expect(subject.recurrence_statement).to eq 'Repeats every 1 day.'
-      expect(subject.frequency).to eq 'DAILY'
-      expect(subject.interval).to eq 1
-      expect(subject.day_of_week).to be_nil
     end
   end
 

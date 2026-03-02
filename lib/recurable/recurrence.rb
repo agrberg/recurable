@@ -32,7 +32,7 @@ class Recurrence
   DAYS_OF_WEEK = Date::DAYNAMES.map { |name| const_set(name.upcase, name[0, 2].upcase) }.freeze
   # Ordered by increasing frequency. Values are approximate period in days.
   # Order used by Comparable#<=> for RruleAdapter strategy selection.
-  # Exposes class constants: Recurrence::YEARLY, Recurrence::DAILY, etc.
+  # Exposes class constants: Recurrence::YEARLY, Recurrence::DAILY, etc. and defines frequency predicates.
   FREQUENCIES = {
     'YEARLY' => 365,
     'MONTHLY' => 31,
@@ -40,7 +40,11 @@ class Recurrence
     'DAILY' => 1,
     'HOURLY' => 1 / 24.0,
     'MINUTELY' => 1 / 24.0 / 60.0
-  }.each_key { |freq| const_set(freq, freq) }.freeze
+  }.each_key do |freq|
+    const_set(freq, freq)
+    define_method(:"#{freq.downcase}?") { freq == frequency }
+  end.freeze
+
   # Exposes class constants: Recurrence::MONTHLY_DATE => 'DATE', Recurrence::MONTHLY_NTH_DAY => 'NTH_DAY'.
   MONTHLY_OPTIONS = %w[DATE NTH_DAY].each { |opt| const_set("MONTHLY_#{opt}", opt) }.freeze
   NTH_DAY_OF_MONTH = {
@@ -55,11 +59,6 @@ class Recurrence
   DATE_OF_MONTH_RANGE = 1..28
   INTERVAL_RANGE = 1..12
   MINUTE_OF_HOUR_RANGE = 0..59
-
-  DEFAULT_PARAMS = {
-    frequency: 'DAILY',
-    interval: 1
-  }.freeze
 
   DELEGATED_ATTRIBUTES = %i[
     date_of_month day_of_month day_of_week frequency
@@ -109,10 +108,6 @@ class Recurrence
   validates :nth_day_of_month, inclusion: { in: NTH_DAY_OF_MONTH.values }, if: :nth_day_option?
 
   class << self
-    def with_defaults
-      new(DEFAULT_PARAMS)
-    end
-
     def from_rrule(rrule:)
       new(**attributes_from(parse_components(rrule)))
     end

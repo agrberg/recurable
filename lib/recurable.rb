@@ -16,9 +16,10 @@ module Recurable
 
   prepended do
     # This concern should only be used with a model that has an `rrule` string column.
-    serialize :rrule, RecurrenceSerializer, default: Recurrence.with_defaults
+    serialize :rrule, RecurrenceSerializer, default: Recurrence.new(frequency: 'DAILY', interval: 1)
 
     delegate(*Recurrence::DELEGATED_ATTRIBUTES.flat_map { |attr| [attr, :"#{attr}="] },
+             *Recurrence::FREQUENCIES.each_key.map { |freq| :"#{freq.downcase}?" },
              :recurrence_statement, to: :rrule)
 
     # This overrides the prepending model's `valid?` method to also apply the recurrence object's interval validation
@@ -32,12 +33,6 @@ module Recurable
       errors.merge! rrule.errors
 
       including_model_valid && recurrence_valid
-    end
-
-    # Defines a method for each frequency that returns true if the recurrence's frequency matches the method name.
-    # E.g., `sample_plan.yearly?` will return true if `sample_plan.frequency` is "YEARLY".
-    Recurrence::FREQUENCIES.each_key do |frequency|
-      define_method(:"#{frequency.downcase}?") { frequency == self.frequency }
     end
   end
 end
