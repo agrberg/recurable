@@ -107,7 +107,7 @@ class Recurrence
     # Parses "FREQ=DAILY;INTERVAL=1;BYDAY=MO…" into {"FREQ"=>"DAILY", "BYDAY"=>"MO", …}
     def parse_components(rrule)
       rrule.split(';').each_with_object({}) do |pair, hash|
-        next if pair.blank?
+        next if pair.strip.empty?
 
         key, value = pair.split('=', 2)
         hash[key] = value
@@ -141,20 +141,20 @@ class Recurrence
   end
 
   def rrule
-    day = day_of_week.presence || day_of_month.presence
+    day = non_blank(day_of_week) || non_blank(day_of_month)
 
     {
       'FREQ' => frequency,
       'INTERVAL' => interval,
-      'BYDAY' => day.presence,
-      'BYMONTHDAY' => date_of_month.presence,
-      'BYMINUTE' => minute_of_hour.presence,
-      'BYSETPOS' => nth_day_of_month.presence
-    }.filter_map { |k, v| "#{k}=#{v}" if v.present? }.join(';')
+      'BYDAY' => day,
+      'BYMONTHDAY' => non_blank(date_of_month),
+      'BYMINUTE' => non_blank(minute_of_hour),
+      'BYSETPOS' => non_blank(nth_day_of_month)
+    }.filter_map { |k, v| "#{k}=#{v}" unless v.nil? }.join(';')
   end
 
   def nth_day_of_month=(value)
-    @nth_day_of_month = value.presence&.to_i
+    @nth_day_of_month = non_blank(value)&.to_i
   end
 
   def <=>(other)
@@ -163,4 +163,9 @@ class Recurrence
     FREQUENCIES.keys.index(frequency) <=> FREQUENCIES.keys.index(other.frequency)
   end
 
+  private
+
+  def non_blank(value)
+    value unless value.nil? || value.to_s.strip.empty?
+  end
 end
