@@ -38,6 +38,7 @@ class Recurrence
     const_set(freq, freq)
     define_method(:"#{freq.downcase}?") { freq == frequency }
   end.freeze
+  FREQ_ORDER = FREQUENCIES.keys.each_with_index.to_h.freeze
 
   # Exposes class constants: Recurrence::MONTHLY_DATE => 'DATE', Recurrence::MONTHLY_NTH_DAY => 'NTH_DAY'.
   MONTHLY_OPTIONS = %w[DATE NTH_DAY].each { |opt| const_set("MONTHLY_#{opt}", opt) }.freeze
@@ -58,6 +59,13 @@ class Recurrence
   DATE_OF_MONTH_RANGE = ((-28..-1).to_a + (1..28).to_a).freeze
   INTERVAL_RANGE = 1..12
   MINUTE_OF_HOUR_RANGE = 0..59
+  HOUR_OF_DAY_RANGE = 0..23
+  SECOND_OF_MINUTE_RANGE = 0..59
+  MONTH_OF_YEAR_RANGE = 1..12
+  DAY_OF_YEAR_RANGE = ((-366..-1).to_a + (1..366).to_a).freeze
+  WEEK_OF_YEAR_RANGE = ((-53..-1).to_a + (1..53).to_a).freeze
+  # Parses an RRULE UNTIL string (e.g. "20261231T235959Z") into a Time object.
+  UNTIL_PATTERN = /\A(?<Y>\d{4})(?<m>\d{2})(?<d>\d{2})T(?<H>\d{2})(?<M>\d{2})(?<S>\d{2})Z\z/
 
   # Naming conventions for the monthly-related attributes:
   #
@@ -74,15 +82,21 @@ class Recurrence
   #                     -2=second-to-last). Paired with day_of_month to express rules like
   #                     "the last Friday". Maps to RRULE's BYSETPOS component.
   #
-  #   day_of_week     — Two-letter day-of-week string for WEEKLY recurrences only.
+  #   day_of_week     — Two-letter day-of-week string(s) for WEEKLY recurrences only.
   #                     Also maps to BYDAY but in the weekly context (no BYSETPOS).
   ATTRIBUTES = %i[
-    date_of_month day_of_month day_of_week frequency
-    interval minute_of_hour nth_day_of_month
+    count date_of_month day_of_month day_of_week day_of_year
+    frequency hour_of_day interval minute_of_hour month_of_year
+    nth_day_of_month repeat_until second_of_minute week_of_year week_start
   ].freeze
 
-  attr_accessor(*(ATTRIBUTES - [:nth_day_of_month]))
-  attr_reader :nth_day_of_month # Setter is overridden below to coerce strings to integers
+  ARRAY_ATTRIBUTES = %i[
+    day_of_month day_of_week day_of_year hour_of_day
+    month_of_year second_of_minute week_of_year
+  ].freeze
+
+  attr_accessor(*(ATTRIBUTES - ARRAY_ATTRIBUTES - %i[nth_day_of_month repeat_until]))
+  attr_reader :nth_day_of_month, :repeat_until, *ARRAY_ATTRIBUTES
 
   class << self
     def from_rrule(rrule:)
@@ -103,32 +117,72 @@ class Recurrence
 
     def attributes_from(components)
       freq = components['FREQ']
-      byday = components['BYDAY']
-      bysetpos = components['BYSETPOS']&.to_i
-      bymonthday = components['BYMONTHDAY']&.to_i
+      byday = split_list(components['BYDAY'])
 
       {
-        date_of_month: bymonthday,
+        count: components['COUNT']&.to_i,
+        date_of_month: components['BYMONTHDAY']&.to_i,
         day_of_month: (byday if freq == 'MONTHLY'),
         day_of_week: (byday if freq == 'WEEKLY'),
+        day_of_year: split_int_list(components['BYYEARDAY']),
         frequency: freq,
+        hour_of_day: split_int_list(components['BYHOUR']),
         interval: components['INTERVAL']&.to_i || 1,
         minute_of_hour: components['BYMINUTE']&.to_i,
-        nth_day_of_month: bysetpos
+        month_of_year: split_int_list(components['BYMONTH']),
+        nth_day_of_month: components['BYSETPOS']&.to_i,
+        repeat_until: components['UNTIL'],
+        second_of_minute: split_int_list(components['BYSECOND']),
+        week_of_year: split_int_list(components['BYWEEKNO']),
+        week_start: components['WKST']
       }
+    end
+
+    def split_list(csv)
+      return unless csv
+
+      list = csv.split(',')
+      list unless list.empty?
+    end
+
+    def split_int_list(csv)
+      split_list(csv)&.map(&:to_i)
     end
   end
 
+  ARRAY_ATTRIBUTES.each do |attr|
+    define_method(:"#{attr}=") do |value|
+      coerced = Array(value)
+      instance_variable_set(:"@#{attr}", coerced.empty? ? nil : coerced)
+    end
+  end
+
+  def repeat_until=(value)
+    @repeat_until = case value
+                    when nil, '' then nil
+                    when Time then value.utc
+                    when String then parse_until(value)
+                    end
+  end
+
   def rrule
-    day = non_blank(day_of_week) || non_blank(day_of_month)
+    byday = join_list(day_of_week) || join_list(day_of_month)
 
     {
       'FREQ' => frequency,
       'INTERVAL' => interval,
-      'BYDAY' => day,
+      'COUNT' => non_blank(count),
+      'UNTIL' => format_until(repeat_until),
+      'BYDAY' => byday,
       'BYMONTHDAY' => non_blank(date_of_month),
+      'BYMONTH' => join_list(month_of_year),
+      'BYHOUR' => join_list(hour_of_day),
       'BYMINUTE' => non_blank(minute_of_hour),
-      'BYSETPOS' => non_blank(nth_day_of_month)
+      'BYSECOND' => join_list(second_of_minute),
+      'BYYEARDAY' => join_list(day_of_year),
+      'BYWEEKNO' => join_list(week_of_year),
+      'BYSETPOS' => non_blank(nth_day_of_month),
+      'WKST' => non_blank(week_start)
     }.filter_map { |k, v| "#{k}=#{v}" unless v.nil? }.join(';')
   end
 
@@ -138,7 +192,7 @@ class Recurrence
 
   def monthly_option
     return unless frequency == 'MONTHLY'
-    return 'NTH_DAY' if nth_day_of_month && day_of_month
+    return 'NTH_DAY' if nth_day_of_month && day_of_month&.any?
 
     'DATE' if date_of_month
   end
@@ -149,12 +203,26 @@ class Recurrence
   def <=>(other)
     return super unless other.is_a?(self.class)
 
-    FREQUENCIES.keys.index(frequency) <=> FREQUENCIES.keys.index(other.frequency)
+    FREQ_ORDER[frequency] <=> FREQ_ORDER[other.frequency]
   end
 
   private
 
   def non_blank(value)
     value unless value.nil? || value.to_s.strip.empty?
+  end
+
+  def join_list(array)
+    non_blank(array&.join(','))
+  end
+
+  def format_until(time)
+    time&.utc&.strftime('%Y%m%dT%H%M%SZ')
+  end
+
+  def parse_until(value)
+    return unless (match = non_blank(value)&.match(UNTIL_PATTERN))
+
+    Time.utc(match[:Y], match[:m], match[:d], match[:H], match[:M], match[:S])
   end
 end

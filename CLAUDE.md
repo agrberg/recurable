@@ -44,7 +44,11 @@ ActiveRecord model (prepends Recurable)
 - **`serialize` with `default:` keyword** — requires Rails 7.1+; this is why 7.0 is not compatible
 - **`activerecord` is NOT a runtime dependency** — only `activemodel` and `activesupport` are runtime deps; `activerecord` is a development dependency for testing the concern's `serialize` call
 - **`Comparable` on Recurrence** — compares by frequency order (YEARLY < MONTHLY < ... < MINUTELY)
-- **`date_of_month` vs `day_of_month`** — confusingly, `date_of_month` is a numeric day (1–28) while `day_of_month` is a day-of-week string (SU/MO/etc.) used in monthly nth-day recurrences
+- **`date_of_month` vs `day_of_month`** — confusingly, `date_of_month` is a numeric day (1–28) while `day_of_month` is an array of day-of-week strings (SU/MO/etc.) used in monthly nth-day recurrences
+- **`day_of_week` and `day_of_month` are arrays** — BYDAY supports multi-value (e.g., `MO,WE,FR`); array setters coerce scalars to single-element arrays
+- **`count` vs `repeat_until`** — mutually exclusive per RFC 5545; validated in the concern
+- **`repeat_until`** — stored as UTC Time; the setter accepts Time objects or RRULE date strings (`YYYYMMDDTHHMMSSZ`)
+- **Full RFC 5545 RRULE support** — all 14 components: FREQ, INTERVAL, COUNT, UNTIL, BYDAY, BYMONTHDAY, BYMONTH, BYHOUR, BYMINUTE, BYSECOND, BYYEARDAY, BYWEEKNO, BYSETPOS, WKST
 
 ## Testing Notes
 

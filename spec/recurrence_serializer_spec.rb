@@ -26,8 +26,8 @@ RSpec.describe RecurrenceSerializer do
     end
 
     it 'returns the rrule string for a Recurrence object' do
-      recurrence = Recurrence.new(frequency: 'WEEKLY', interval: 2, day_of_week: 'MO')
-      expect(described_class.dump(recurrence)).to eq('FREQ=WEEKLY;INTERVAL=2;BYDAY=MO')
+      recurrence = Recurrence.new(frequency: 'WEEKLY', interval: 2, day_of_week: %w[MO TU])
+      expect(described_class.dump(recurrence)).to eq('FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TU')
     end
   end
 
@@ -41,6 +41,31 @@ RSpec.describe RecurrenceSerializer do
       expect(restored.interval).to eq(original.interval)
       expect(restored.date_of_month).to eq(original.date_of_month)
       expect(restored.rrule).to eq(original.rrule)
+    end
+
+    it 'preserves COUNT through round-trip' do
+      original = Recurrence.new(frequency: 'DAILY', interval: 1, count: 10)
+      restored = described_class.load(described_class.dump(original))
+      expect(restored.count).to eq(10)
+    end
+
+    it 'preserves UNTIL through round-trip' do
+      original = Recurrence.new(frequency: 'DAILY', interval: 1, repeat_until: Time.utc(2026, 12, 31, 23, 59, 59))
+      restored = described_class.load(described_class.dump(original))
+      expect(restored.repeat_until).to eq(Time.utc(2026, 12, 31, 23, 59, 59))
+    end
+
+    it 'preserves array attributes through round-trip' do
+      original = Recurrence.new(frequency: 'YEARLY', interval: 1, month_of_year: [1, 6], day_of_year: [1, -1])
+      restored = described_class.load(described_class.dump(original))
+      expect(restored.month_of_year).to eq([1, 6])
+      expect(restored.day_of_year).to eq([1, -1])
+    end
+
+    it 'preserves multi-value BYDAY through round-trip' do
+      original = Recurrence.new(frequency: 'WEEKLY', interval: 1, day_of_week: %w[MO WE FR])
+      restored = described_class.load(described_class.dump(original))
+      expect(restored.day_of_week).to eq(%w[MO WE FR])
     end
   end
 end
