@@ -108,47 +108,51 @@ class Recurrence
   validates :monthly_option, inclusion: { in: MONTHLY_OPTIONS }, allow_blank: true
   validates :nth_day_of_month, inclusion: { in: NTH_DAY_OF_MONTH.values }, if: :nth_day_option?
 
-  def self.with_defaults
-    new(DEFAULT_PARAMS)
-  end
-
-  def self.from_rrule(rrule:)
-    new(**attributes_from(parse_components(rrule)))
-  end
-
-  # Parses "FREQ=DAILY;INTERVAL=1;BYDAY=MO" into {"FREQ"=>"DAILY", ...}
-  private_class_method def self.parse_components(rrule)
-    rrule.split(';').each_with_object({}) do |pair, hash|
-      next if pair.blank?
-
-      key, value = pair.split('=', 2)
-      hash[key] = value
+  class << self
+    def with_defaults
+      new(DEFAULT_PARAMS)
     end
-  end
 
-  private_class_method def self.attributes_from(components)
-    freq = components['FREQ']
-    byday = components['BYDAY']
-    bysetpos = components['BYSETPOS']&.to_i
-    bymonthday = components['BYMONTHDAY']&.to_i
+    def from_rrule(rrule:)
+      new(**attributes_from(parse_components(rrule)))
+    end
 
-    {
-      date_of_month: bymonthday,
-      day_of_month: (byday if freq == 'MONTHLY'),
-      day_of_week: (byday if freq == 'WEEKLY'),
-      frequency: freq,
-      interval: components['INTERVAL']&.to_i || 1,
-      minute_of_hour: components['BYMINUTE']&.to_i,
-      monthly_option: monthly_option_for(freq, bysetpos, byday, bymonthday),
-      nth_day_of_month: bysetpos
-    }
-  end
+    private
 
-  private_class_method def self.monthly_option_for(freq, bysetpos, byday, bymonthday)
-    return unless freq == 'MONTHLY'
-    return 'NTH_DAY' if bysetpos && byday
+    # Parses "FREQ=DAILY;INTERVAL=1;BYDAY=MO…" into {"FREQ"=>"DAILY", "BYDAY"=>"MO", …}
+    def parse_components(rrule)
+      rrule.split(';').each_with_object({}) do |pair, hash|
+        next if pair.blank?
 
-    'DATE' if bymonthday
+        key, value = pair.split('=', 2)
+        hash[key] = value
+      end
+    end
+
+    def attributes_from(components)
+      freq = components['FREQ']
+      byday = components['BYDAY']
+      bysetpos = components['BYSETPOS']&.to_i
+      bymonthday = components['BYMONTHDAY']&.to_i
+
+      {
+        date_of_month: bymonthday,
+        day_of_month: (byday if freq == 'MONTHLY'),
+        day_of_week: (byday if freq == 'WEEKLY'),
+        frequency: freq,
+        interval: components['INTERVAL']&.to_i || 1,
+        minute_of_hour: components['BYMINUTE']&.to_i,
+        monthly_option: monthly_option_for(freq, bysetpos, byday, bymonthday),
+        nth_day_of_month: bysetpos
+      }
+    end
+
+    def monthly_option_for(freq, bysetpos, byday, bymonthday)
+      return unless freq == 'MONTHLY'
+      return 'NTH_DAY' if bysetpos && byday
+
+      'DATE' if bymonthday
+    end
   end
 
   def rrule
