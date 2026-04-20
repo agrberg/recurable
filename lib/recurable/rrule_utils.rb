@@ -5,8 +5,6 @@ require 'active_support/core_ext/time/zones'
 require 'rrule'
 
 module RruleUtils
-  SUB_DAILY_NOUNS = { 'HOURLY' => 'hour', 'MINUTELY' => 'minute' }.freeze
-
   def recurrence_times(project_from:, project_to:, dt_start_at: nil)
     dt_start_at ||= project_from
     RRule::Rule.new(recurrence.to_rrule, dtstart: dt_start_at, tzid: Time.zone.tzinfo.identifier)
@@ -25,9 +23,6 @@ module RruleUtils
   end
 
   def humanize_recurrence
-    noun = SUB_DAILY_NOUNS[recurrence.frequency]
-    return RRule::Rule.new(recurrence.to_rrule).humanize unless noun
-
-    "every #{recurrence.interval == 1 ? noun : "#{recurrence.interval} #{noun}s"}"
+    RRule::Rule.new(recurrence.to_rrule).humanize
   end
 end

@@ -8,6 +8,11 @@ if ENV['COVERAGE']
 end
 
 require 'bundler/setup'
+begin
+  require 'debug'
+rescue LoadError
+  # debug gem is optional; available in the root Gemfile but not in CI matrix gemfiles
+end
 require 'active_support/all'
 require 'recurable'
 
