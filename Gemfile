@@ -6,6 +6,7 @@ gemspec
 
 group :development, :test do
   gem 'activerecord', '>= 7.1' # needed for Recurable concern's serialize call
+  gem 'debug'
   gem 'rake'
   gem 'rspec'
   gem 'rubocop'
