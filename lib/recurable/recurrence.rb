@@ -2,6 +2,8 @@
 
 require 'date'
 require_relative 'version'
+require_relative 'recurrence/parser'
+require_relative 'recurrence/formatter'
 
 # Core model representing an iCal RRULE recurrence pattern.
 #
@@ -15,13 +17,6 @@ require_relative 'version'
 class Recurrence
   # Provides `<`, `<=`, `>`, `>=`, `==`, `between?`, and `clamp` by defining `<=>`.
   include Comparable
-
-  def initialize(**attrs)
-    unknown = attrs.keys - ATTRIBUTES
-    raise ArgumentError, "Unknown attribute(s): #{unknown.join(', ')}" if unknown.any?
-
-    attrs.each { |attr, value| public_send(:"#{attr}=", value) }
-  end
 
   # iCal BYDAY codes derived from Date::DAYNAMES, ordered Sunday–Saturday.
   # Exposes class constants: Recurrence::SUNDAY => 'SU', Recurrence::MONDAY => 'MO', etc.
@@ -78,64 +73,23 @@ class Recurrence
   ARRAY_ATTRIBUTES = %i[
     by_day by_month_day by_set_pos day_of_year hour_of_day minute_of_hour
     month_of_year second_of_minute week_of_year
-  ].freeze
-
-  attr_accessor(*(ATTRIBUTES - ARRAY_ATTRIBUTES - %i[repeat_until]))
-  attr_reader :repeat_until, *ARRAY_ATTRIBUTES
-
-  class << self
-    def from_rrule(rrule)
-      new(**attributes_from(parse_components(rrule)))
-    end
-
-    private
-
-    # Parses "FREQ=DAILY;INTERVAL=1;BYDAY=MO…" into {"FREQ"=>"DAILY", "BYDAY"=>"MO", …}
-    def parse_components(rrule)
-      rrule.split(';').each_with_object({}) do |pair, hash|
-        next if pair.strip.empty?
-
-        key, value = pair.split('=', 2)
-        hash[key] = value
-      end
-    end
-
-    def attributes_from(components)
-      {
-        by_day: split_list(components['BYDAY']),
-        by_month_day: split_int_list(components['BYMONTHDAY']),
-        by_set_pos: split_int_list(components['BYSETPOS']),
-        count: components['COUNT']&.to_i,
-        day_of_year: split_int_list(components['BYYEARDAY']),
-        frequency: components['FREQ'],
-        hour_of_day: split_int_list(components['BYHOUR']),
-        interval: components['INTERVAL']&.to_i || 1,
-        minute_of_hour: split_int_list(components['BYMINUTE']),
-        month_of_year: split_int_list(components['BYMONTH']),
-        repeat_until: components['UNTIL'],
-        second_of_minute: split_int_list(components['BYSECOND']),
-        week_of_year: split_int_list(components['BYWEEKNO']),
-        week_start: components['WKST']
-      }
-    end
-
-    def split_list(csv)
-      return unless csv
-
-      list = csv.split(',')
-      list unless list.empty?
-    end
-
-    def split_int_list(csv)
-      split_list(csv)&.map(&:to_i)
-    end
-  end
-
-  ARRAY_ATTRIBUTES.each do |attr|
+  ].each do |attr|
     define_method(:"#{attr}=") do |value|
       coerced = Array(value)
       instance_variable_set(:"@#{attr}", coerced.empty? ? nil : coerced)
     end
+  end.freeze
+
+  attr_accessor(*(ATTRIBUTES - ARRAY_ATTRIBUTES - %i[repeat_until]))
+  attr_reader :repeat_until, *ARRAY_ATTRIBUTES
+
+  def self.from_rrule(rrule) = new(**Parser.call(rrule))
+
+  def initialize(**attrs)
+    unknown = attrs.keys - ATTRIBUTES
+    raise ArgumentError, "Unknown attribute(s): #{unknown.join(', ')}" if unknown.any?
+
+    attrs.each { |attr, value| public_send(:"#{attr}=", value) }
   end
 
   def repeat_until=(value)
@@ -144,25 +98,6 @@ class Recurrence
                     when Time then value.utc
                     when String then parse_until(value)
                     end
-  end
-
-  def to_rrule
-    {
-      'FREQ' => frequency,
-      'INTERVAL' => interval,
-      'COUNT' => non_blank(count),
-      'UNTIL' => format_until(repeat_until),
-      'BYDAY' => join_list(by_day),
-      'BYMONTHDAY' => join_list(by_month_day),
-      'BYMONTH' => join_list(month_of_year),
-      'BYHOUR' => join_list(hour_of_day),
-      'BYMINUTE' => join_list(minute_of_hour),
-      'BYSECOND' => join_list(second_of_minute),
-      'BYYEARDAY' => join_list(day_of_year),
-      'BYWEEKNO' => join_list(week_of_year),
-      'BYSETPOS' => join_list(by_set_pos),
-      'WKST' => non_blank(week_start)
-    }.filter_map { |k, v| "#{k}=#{v}" unless v.nil? }.join(';')
   end
 
   def monthly_option
@@ -174,6 +109,7 @@ class Recurrence
 
   def by_month_day_option? = monthly_option == 'DATE'
   def by_set_pos_option? = monthly_option == 'NTH_DAY'
+  def to_rrule = Formatter.call(self)
 
   def <=>(other)
     return super unless other.is_a?(self.class)
@@ -183,20 +119,9 @@ class Recurrence
 
   private
 
-  def non_blank(value)
-    value unless value.nil? || value.to_s.strip.empty?
-  end
-
-  def join_list(array)
-    non_blank(array&.join(','))
-  end
-
-  def format_until(time)
-    time&.utc&.strftime('%Y%m%dT%H%M%SZ')
-  end
-
   def parse_until(value)
-    return unless (match = non_blank(value)&.match(UNTIL_PATTERN))
+    return if value.to_s.strip.empty?
+    return unless (match = value.match(UNTIL_PATTERN))
 
     Time.utc(match[:Y], match[:m], match[:d], match[:H], match[:M], match[:S])
   end
