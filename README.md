@@ -1,5 +1,8 @@
 # Recurable
 
+[![CI](https://github.com/agrberg/recurable/actions/workflows/ci.yml/badge.svg)](https://github.com/agrberg/recurable/actions/workflows/ci.yml)
+[![Gem Version](https://badge.fury.io/rb/recurable.svg)](https://badge.fury.io/rb/recurable)
+
 iCal RRULE recurrence library for Ruby with optional Rails/ActiveRecord integration. Full [RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10) RRULE support.
 
 ## Quick Start: Standalone
